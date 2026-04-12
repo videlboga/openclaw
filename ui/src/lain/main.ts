@@ -1,6 +1,7 @@
 import "./styles.css";
 import { html, render } from "lit-html";
 import { repeat } from "lit/directives/repeat.js";
+import { normalizeMessage, normalizeRoleForGrouping } from "../ui/chat/message-normalizer.ts";
 import { loadControlUiBootstrapConfig } from "../ui/controllers/control-ui-bootstrap.ts";
 import { applySettingsFromUrl } from "../ui/app-settings.ts";
 import {
@@ -12,11 +13,12 @@ import { loadSettings } from "../ui/storage.ts";
 import type { GatewaySessionRow, SessionsListResult } from "../ui/types.ts";
 
 type Mood = "idle" | "listening" | "thinking" | "routing" | "executing" | "blocked" | "done";
-type Role = "assistant" | "system" | "user";
+type Role = "assistant" | "system" | "user" | "tool";
 
 type ChatMessage = {
   role: Role;
   text: string;
+  collapsed?: boolean;
 };
 
 type ContextItem = {
@@ -103,29 +105,54 @@ const state = {
   sending: false,
 };
 
-function normalizeTextFromMessage(message: unknown): string {
-  if (!message || typeof message !== "object") {
-    return "";
-  }
-  const record = message as Record<string, unknown>;
-  if (typeof record.text === "string") {
-    return record.text;
-  }
-  if (Array.isArray(record.content)) {
-    return record.content
-      .map((part) => {
-        if (!part || typeof part !== "object") return "";
-        const chunk = part as Record<string, unknown>;
-        return typeof chunk.text === "string" ? chunk.text : "";
-      })
-      .filter(Boolean)
-      .join("\n\n");
-  }
-  return "";
+function previewToolText(text: string): string {
+  const singleLine = text.replace(/\s+/g, " ").trim();
+  if (!singleLine) return "Tool activity";
+  return singleLine.length > 96 ? `${singleLine.slice(0, 96)}…` : singleLine;
 }
 
-function toRole(value: unknown): Role {
-  return value === "user" || value === "system" || value === "assistant" ? value : "system";
+function normalizedMessageToChatMessage(message: unknown): ChatMessage | null {
+  const normalized = normalizeMessage(message);
+  const role = normalizeRoleForGrouping(normalized.role);
+  const text = normalized.content
+    .map((item) => {
+      if (item.type === "text") {
+        return item.text ?? "";
+      }
+      if (item.type === "tool_use") {
+        const args = item.args ? JSON.stringify(item.args, null, 2) : "";
+        return `Tool call · ${item.name ?? "unknown"}${args ? `\n${args}` : ""}`;
+      }
+      if (item.type === "tool_result") {
+        return item.text ?? `Tool result · ${item.name ?? "unknown"}`;
+      }
+      if (item.name) {
+        const args = item.args ? JSON.stringify(item.args, null, 2) : "";
+        return `${item.name}${args ? `\n${args}` : ""}`;
+      }
+      return item.text ?? "";
+    })
+    .filter(Boolean)
+    .join("\n\n")
+    .trim();
+
+  if (!text) {
+    return null;
+  }
+
+  if (role === "tool") {
+    return {
+      role: "tool",
+      text,
+      collapsed: true,
+    };
+  }
+
+  if (role === "assistant" || role === "system" || role === "user") {
+    return { role, text };
+  }
+
+  return { role: "system", text };
 }
 
 function summarizePipeline(row: GatewaySessionRow): string {
@@ -252,11 +279,8 @@ async function loadChatHistory(sessionKey: string) {
       limit: 120,
     });
     session.messages = (res.messages ?? [])
-      .map((message) => ({
-        role: toRole((message as Record<string, unknown>)?.role),
-        text: normalizeTextFromMessage(message),
-      }))
-      .filter((message) => message.text.trim().length > 0);
+      .map(normalizedMessageToChatMessage)
+      .filter((message): message is ChatMessage => Boolean(message));
   } catch (error) {
     session.messages = [
       {
@@ -338,24 +362,26 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
     void loadSessionsList();
     return;
   }
+
   if (runState === "delta") {
-    const text = normalizeTextFromMessage(payload?.message);
-    if (!text.trim()) return;
+    const nextMessage = normalizedMessageToChatMessage(payload?.message);
+    if (!nextMessage) return;
     const last = session.messages[session.messages.length - 1];
-    if (last?.role === "assistant") {
-      last.text = text;
+    if (last?.role === nextMessage.role && nextMessage.role === "assistant") {
+      last.text = nextMessage.text;
     } else {
-      session.messages = [...session.messages, { role: "assistant", text }];
+      session.messages = [...session.messages, nextMessage];
     }
   }
+
   if (runState === "final" || runState === "aborted") {
-    const text = normalizeTextFromMessage(payload?.message);
-    if (text.trim()) {
+    const nextMessage = normalizedMessageToChatMessage(payload?.message);
+    if (nextMessage) {
       const last = session.messages[session.messages.length - 1];
-      if (last?.role === "assistant") {
-        last.text = text;
+      if (last?.role === nextMessage.role && nextMessage.role === "assistant") {
+        last.text = nextMessage.text;
       } else {
-        session.messages = [...session.messages, { role: "assistant", text }];
+        session.messages = [...session.messages, nextMessage];
       }
     }
     if (sessionKey !== state.currentContextId) {
@@ -363,6 +389,7 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
     }
     void loadSessionsList();
   }
+
   if (runState === "error") {
     const errorMessage =
       typeof payload?.errorMessage === "string" ? payload.errorMessage : "chat error";
@@ -415,6 +442,27 @@ function connect(attemptIndex = 0) {
   });
   state.client = client;
   client.start();
+}
+
+function renderMessage(msg: ChatMessage) {
+  if (msg.role === "tool") {
+    return html`
+      <details class="lain-message lain-message--tool" ?open=${false}>
+        <summary>
+          <span class="lain-message__role">tool</span>
+          <span class="lain-tool-summary">${previewToolText(msg.text)}</span>
+        </summary>
+        <div class="lain-message__body">${msg.text}</div>
+      </details>
+    `;
+  }
+
+  return html`
+    <article class="lain-message lain-message--${msg.role}">
+      <div class="lain-message__role">${msg.role}</div>
+      <div class="lain-message__body">${msg.text}</div>
+    </article>
+  `;
 }
 
 function app() {
@@ -488,12 +536,7 @@ function app() {
               ? repeat(
                   current.messages,
                   (_, index) => `${current.id}-${index}`,
-                  (msg) => html`
-                    <article class="lain-message lain-message--${msg.role}">
-                      <div class="lain-message__role">${msg.role}</div>
-                      <div class="lain-message__body">${msg.text}</div>
-                    </article>
-                  `,
+                  (msg) => renderMessage(msg),
                 )
               : html`<article class="lain-message lain-message--system"><div class="lain-message__role">system</div><div class="lain-message__body">Waiting for live session data.</div></article>`}
           </div>

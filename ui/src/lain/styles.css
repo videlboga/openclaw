@@ -44,6 +44,7 @@ body {
   display: grid;
   place-items: center;
   padding: 24px;
+  overflow: hidden;
 }
 
 button,
@@ -53,7 +54,7 @@ textarea {
 
 .lain-shell {
   width: min(1240px, 100%);
-  min-height: 780px;
+  height: min(900px, calc(100vh - 48px));
   border-radius: 24px;
   overflow: hidden;
   border: 1px solid var(--border-color);
@@ -115,17 +116,20 @@ textarea {
 .lain-main {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr) 280px;
-  min-height: 720px;
+  height: calc(100% - 57px);
+  min-height: 0;
 }
 
 .lain-contexts,
 .lain-persona {
   padding: 18px;
   background: rgba(24, 24, 37, 0.92);
+  min-height: 0;
 }
 
 .lain-contexts {
   border-right: 1px solid var(--border-color);
+  overflow: auto;
 }
 
 .lain-persona {
@@ -224,6 +228,7 @@ textarea {
   gap: 16px;
   padding: 20px;
   background: linear-gradient(180deg, rgba(30, 30, 46, 0.72), rgba(24, 24, 37, 0.92));
+  min-height: 0;
 }
 
 .lain-stream__meta {
@@ -272,6 +277,9 @@ textarea {
   flex-direction: column;
   gap: 14px;
   flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 6px;
 }
 
 .lain-message {
@@ -280,6 +288,40 @@ textarea {
   border-radius: var(--radius);
   border: 1px solid var(--border-color);
   background: rgba(24, 24, 37, 0.95);
+}
+
+.lain-message--tool {
+  max-width: 760px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 226, 213, 0.2);
+  background: rgba(17, 17, 27, 0.72);
+  padding: 0;
+  overflow: hidden;
+}
+
+.lain-message--tool summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.lain-message--tool summary::-webkit-details-marker {
+  display: none;
+}
+
+.lain-tool-summary {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.lain-message--tool .lain-message__body {
+  border-top: 1px solid rgba(88, 91, 112, 0.5);
+  padding: 12px 14px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
 }
 
 .lain-message--user {
@@ -462,6 +504,10 @@ textarea {
 }
 
 @media (max-width: 1080px) {
+  .lain-shell {
+    height: calc(100vh - 32px);
+  }
+
   .lain-main {
     grid-template-columns: 240px minmax(0, 1fr);
   }
@@ -475,13 +521,27 @@ textarea {
 }
 
 @media (max-width: 760px) {
+  body {
+    padding: 0;
+  }
+
+  .lain-shell {
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+  }
+
   .lain-main {
     grid-template-columns: 1fr;
+    height: calc(100% - 57px);
   }
 
   .lain-contexts {
     border-right: 0;
     border-bottom: 1px solid var(--border-color);
+    max-height: 180px;
   }
 
   .lain-composer__footer {
