@@ -41,6 +41,7 @@ type SessionState = {
   messages: ChatMessage[];
   draft: string;
   unread: boolean;
+  toolStatus: string | null;
 };
 
 const liveSessions = new Map<string, SessionState>();
@@ -111,6 +112,22 @@ function previewToolText(text: string): string {
   return singleLine.length > 96 ? `${singleLine.slice(0, 96)}…` : singleLine;
 }
 
+function extractToolStatus(message: unknown): string | null {
+  const normalized = normalizeMessage(message);
+  const toolBits = normalized.content
+    .map((item) => {
+      if (item.type === "tool_use") {
+        return item.name ? `Applying ${item.name}` : "Applying tool";
+      }
+      if (item.type === "tool_result") {
+        return item.name ? `${item.name} returned` : "Tool returned";
+      }
+      return null;
+    })
+    .filter((value): value is string => Boolean(value));
+  return toolBits[0] ?? null;
+}
+
 function normalizedMessageToChatMessage(message: unknown): ChatMessage | null {
   const normalized = normalizeMessage(message);
   const role = normalizeRoleForGrouping(normalized.role);
@@ -141,11 +158,7 @@ function normalizedMessageToChatMessage(message: unknown): ChatMessage | null {
   }
 
   if (role === "tool") {
-    return {
-      role: "tool",
-      text,
-      collapsed: true,
-    };
+    return null;
   }
 
   if (role === "assistant" || role === "system" || role === "user") {
@@ -199,6 +212,7 @@ function ensureSession(row: GatewaySessionRow): SessionState {
     messages: [],
     draft: "",
     unread: false,
+    toolStatus: null,
   };
   liveSessions.set(row.key, created);
   return created;
@@ -281,6 +295,7 @@ async function loadChatHistory(sessionKey: string) {
     session.messages = (res.messages ?? [])
       .map(normalizedMessageToChatMessage)
       .filter((message): message is ChatMessage => Boolean(message));
+    session.toolStatus = null;
   } catch (error) {
     session.messages = [
       {
@@ -364,8 +379,15 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
   }
 
   if (runState === "delta") {
+    const toolStatus = extractToolStatus(payload?.message);
+    if (toolStatus) {
+      session.toolStatus = toolStatus;
+      rerender();
+      return;
+    }
     const nextMessage = normalizedMessageToChatMessage(payload?.message);
     if (!nextMessage) return;
+    session.toolStatus = null;
     const last = session.messages[session.messages.length - 1];
     if (last?.role === nextMessage.role && nextMessage.role === "assistant") {
       last.text = nextMessage.text;
@@ -375,6 +397,7 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
   }
 
   if (runState === "final" || runState === "aborted") {
+    session.toolStatus = null;
     const nextMessage = normalizedMessageToChatMessage(payload?.message);
     if (nextMessage) {
       const last = session.messages[session.messages.length - 1];
@@ -391,6 +414,7 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
   }
 
   if (runState === "error") {
+    session.toolStatus = null;
     const errorMessage =
       typeof payload?.errorMessage === "string" ? payload.errorMessage : "chat error";
     session.messages = [...session.messages, { role: "system", text: errorMessage }];
@@ -445,18 +469,6 @@ function connect(attemptIndex = 0) {
 }
 
 function renderMessage(msg: ChatMessage) {
-  if (msg.role === "tool") {
-    return html`
-      <details class="lain-message lain-message--tool" ?open=${false}>
-        <summary>
-          <span class="lain-message__role">tool</span>
-          <span class="lain-tool-summary">${previewToolText(msg.text)}</span>
-        </summary>
-        <div class="lain-message__body">${msg.text}</div>
-      </details>
-    `;
-  }
-
   return html`
     <article class="lain-message lain-message--${msg.role}">
       <div class="lain-message__role">${msg.role}</div>
@@ -530,6 +542,10 @@ function app() {
                 : ""}
             </div>
           </div>
+
+          ${getCurrentSession()?.toolStatus
+            ? html`<div class="lain-tool-status">${getCurrentSession()?.toolStatus}…</div>`
+            : ""}
 
           <div class="lain-messages">
             ${current
