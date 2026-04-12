@@ -151,6 +151,14 @@ textarea {
   gap: 10px;
 }
 
+.lain-empty {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(49, 50, 68, 0.2);
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
 .lain-context {
   width: 100%;
   text-align: left;
@@ -346,6 +354,12 @@ textarea {
 
 .lain-send:hover {
   filter: brightness(1.05);
+}
+
+.lain-send:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  box-shadow: none;
 }
 
 .lain-send:active {
