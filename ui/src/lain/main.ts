@@ -2,6 +2,7 @@ import "./styles.css";
 import { html, render } from "lit-html";
 import { repeat } from "lit/directives/repeat.js";
 import { loadControlUiBootstrapConfig } from "../ui/controllers/control-ui-bootstrap.ts";
+import { applySettingsFromUrl } from "../ui/app-settings.ts";
 import {
   GatewayBrowserClient,
   type GatewayEventFrame,
@@ -42,6 +43,47 @@ type SessionState = {
 
 const liveSessions = new Map<string, SessionState>();
 const settings = loadSettings();
+const settingsHost = {
+  settings,
+  sessionKey: settings.sessionKey,
+  pendingGatewayUrl: null as string | null,
+  pendingGatewayToken: null as string | null,
+  applySettings(next: typeof settings) {
+    Object.assign(settings, next);
+  },
+};
+applySettingsFromUrl(settingsHost as never);
+if (settingsHost.pendingGatewayUrl) {
+  settings.gatewayUrl = settingsHost.pendingGatewayUrl;
+}
+if (settingsHost.pendingGatewayToken) {
+  settings.token = settingsHost.pendingGatewayToken;
+}
+if (settingsHost.sessionKey) {
+  settings.sessionKey = settingsHost.sessionKey;
+  settings.lastActiveSessionKey = settingsHost.sessionKey;
+}
+
+function deriveGatewayCandidates(primary: string): string[] {
+  const values = new Set<string>();
+  const trimmed = primary.trim();
+  if (trimmed) {
+    values.add(trimmed);
+  }
+  try {
+    const current = new URL(window.location.href);
+    const wsProto = current.protocol === "https:" ? "wss:" : "ws:";
+    values.add(`${wsProto}//127.0.0.1:19004/ws`);
+    values.add(`${wsProto}//localhost:19004/ws`);
+    values.add(`${wsProto}//${current.host}/ws`);
+    values.add(`${wsProto}//${current.hostname}:18789`);
+    values.add(`${wsProto}//127.0.0.1:18789`);
+    values.add(`${wsProto}//localhost:18789`);
+  } catch {
+    // ignore
+  }
+  return Array.from(values);
+}
 
 const state = {
   assistantName: "Lain",
@@ -51,6 +93,8 @@ const state = {
   currentContextId: settings.lastActiveSessionKey || settings.sessionKey || "main",
   connected: false,
   gatewayUrl: settings.gatewayUrl,
+  gatewayCandidates: deriveGatewayCandidates(settings.gatewayUrl),
+  gatewayCandidateIndex: 0,
   error: null as string | null,
   client: null as GatewayBrowserClient | null,
   hello: null as GatewayHelloOk | null,
@@ -327,10 +371,15 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
   rerender();
 }
 
-function connect() {
+function connect(attemptIndex = 0) {
   state.client?.stop();
+  const url = state.gatewayCandidates[attemptIndex] ?? state.gatewayCandidates[0] ?? settings.gatewayUrl;
+  state.gatewayCandidateIndex = attemptIndex;
+  state.gatewayUrl = url;
+  state.status = `Connecting to gateway (${attemptIndex + 1}/${state.gatewayCandidates.length})`;
+  rerender();
   const client = new GatewayBrowserClient({
-    url: settings.gatewayUrl,
+    url,
     token: settings.token || undefined,
     clientName: "openclaw-control-ui",
     clientVersion: "lain-prototype",
@@ -349,8 +398,17 @@ function connect() {
     },
     onClose: ({ code, reason, error }) => {
       state.connected = false;
+      const failure = error?.message ?? (reason || "gateway disconnected");
+      const canRetry = code !== 1000 && attemptIndex + 1 < state.gatewayCandidates.length;
+      if (canRetry) {
+        state.status = `Gateway retry on ${state.gatewayCandidates[attemptIndex + 1]}`;
+        state.error = failure;
+        rerender();
+        window.setTimeout(() => connect(attemptIndex + 1), 150);
+        return;
+      }
       state.status = `Disconnected (${code})`;
-      state.error = error?.message ?? (reason || "gateway disconnected");
+      state.error = failure;
       rerender();
     },
     onEvent: handleGatewayEvent,
