@@ -74,11 +74,11 @@ function deriveGatewayCandidates(primary: string): string[] {
     const current = new URL(window.location.href);
     const wsProto = current.protocol === "https:" ? "wss:" : "ws:";
     values.add(`${wsProto}//127.0.0.1:19004/ws`);
+    values.add(`${wsProto}//127.0.0.1:19004/`);
     values.add(`${wsProto}//localhost:19004/ws`);
+    values.add(`${wsProto}//localhost:19004/`);
     values.add(`${wsProto}//${current.host}/ws`);
-    values.add(`${wsProto}//${current.hostname}:18789`);
-    values.add(`${wsProto}//127.0.0.1:18789`);
-    values.add(`${wsProto}//localhost:18789`);
+    values.add(`${wsProto}//${current.host}/`);
   } catch {
     // ignore
   }
