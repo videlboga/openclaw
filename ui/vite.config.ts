@@ -31,6 +31,12 @@ export default defineConfig(() => {
       outDir: path.resolve(here, "../dist/control-ui"),
       emptyOutDir: true,
       sourcemap: true,
+      rollupOptions: {
+        input: {
+          main: path.resolve(here, "index.html"),
+          lain: path.resolve(here, "lain.html"),
+        },
+      },
       // Keep CI/onboard logs clean; current control UI chunking is intentionally above 500 kB.
       chunkSizeWarningLimit: 1024,
     },
