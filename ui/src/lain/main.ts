@@ -418,7 +418,7 @@ function adjustTextareaHeight(el: HTMLTextAreaElement) {
 function isUserNearBottom(threshold = 200) {
   try {
     const root = document.querySelector<HTMLElement>('.chat-thread');
-    if (!root) return true; // if we can't find it, be permissive and allow autoscroll
+    if (!root) {return true;} // if we can't find it, be permissive and allow autoscroll
     // find the nearest scrollable ancestor containing the last message
     const last = document.querySelector<HTMLElement>('.chat-thread-inner > *:last-child') || document.querySelector<HTMLElement>('.chat-thread > *:last-child');
     const container = (last && last.closest && last.closest('.chat-thread')) || root;
@@ -449,7 +449,7 @@ function scrollChatToBottom(smooth = false) {
 
     // fallback: same as before
     const root = document.querySelector<HTMLElement>('.chat-thread');
-    if (!root) return;
+    if (!root) {return;}
     const all = [root, ...Array.from(root.querySelectorAll<HTMLElement>('*'))];
     for (let i = all.length - 1; i >= 0; i--) {
       const el = all[i];
@@ -569,7 +569,7 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
     if (session.row.key === state.currentContextId) {
       requestAnimationFrame(() => scrollChatToBottom(true));
     }
-    if (appended) return;
+    if (appended) {return;}
   }
 
   if (runState === "final" || runState === "aborted") {
@@ -800,11 +800,11 @@ function app() {
                     @input=${(e: Event) => {
                       const v = (e.target as HTMLInputElement).value;
                       const s = getCurrentSession();
-                      if (s) s.nameDraft = v;
+                      if (s) {s.nameDraft = v;}
                     }}
                     @keydown=${async (e: KeyboardEvent) => {
                       const s = getCurrentSession();
-                      if (!s) return;
+                      if (!s) {return;}
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         // optimistic update
@@ -834,7 +834,7 @@ function app() {
                   />
                   <button class="lain-chip ${current.nameLoading ? 'lain-chip--loading' : ''}" @click=${async () => {
                     const s = getCurrentSession();
-                    if (!s) return;
+                    if (!s) {return;}
                     s.nameLoading = true;
                     // optimistic update
                     const prevLabel = s.row.label;
@@ -854,7 +854,7 @@ function app() {
                   }}>${current.nameLoading ? 'Saving...' : 'Save'}</button>
                   <button class="lain-chip" @click=${() => {
                     const s = getCurrentSession();
-                    if (!s) return;
+                    if (!s) {return;}
                     s.nameEditing = false;
                     s.nameDraft = s.row.label ?? s.row.subject ?? '';
                     rerender();
@@ -862,7 +862,7 @@ function app() {
                 : html`<strong>${current?.name ?? "(untitled)"}</strong>
                     <button class="lain-chip" @click=${() => {
                       const s = getCurrentSession();
-                      if (!s) return;
+                      if (!s) {return;}
                       s.nameEditing = true;
                       s.nameDraft = s.row.label ?? s.row.subject ?? '';
                       rerender();
@@ -922,7 +922,7 @@ function app() {
                         </div>
                         <div class="lain-title-modal__actions">
                           <button class="lain-chip" @click=${() => applyGeneratedTitle(state.generatedTitles[state.titleModalSelected] ?? state.titleModalSeed ?? 'Untitled')}>Применить</button>
-                          <button class="lain-chip" @click=${() => { const s = getCurrentSession(); if (!s) return; s.nameEditing = true; s.nameDraft = state.generatedTitles[state.titleModalSelected] ?? state.titleModalSeed ?? ''; closeTitleModal(); }}>Редактировать</button>
+                          <button class="lain-chip" @click=${() => { const s = getCurrentSession(); if (!s) {return;} s.nameEditing = true; s.nameDraft = state.generatedTitles[state.titleModalSelected] ?? state.titleModalSeed ?? ''; closeTitleModal(); }}>Редактировать</button>
                           <button class="lain-chip" @click=${() => closeTitleModal()}>Отмена</button>
                         </div>
                       `}
@@ -1082,7 +1082,7 @@ function rerender() {
     // show title modal if requested
     if (state.titleModalOpen) {
       const modal = document.querySelector('.lain-title-modal') as HTMLElement | null;
-      if (modal) modal.focus();
+      if (modal) {modal.focus();}
     }
   });
 }
@@ -1098,9 +1098,9 @@ async function createNewSession(label?: string, initialMessage?: string) {
   rerender();
   try {
     const payload: Record<string, unknown> = {};
-    if (label) payload.label = label;
-    if (initialMessage) payload.initialMessage = initialMessage;
-    const res = await state.client.request<Record<string, unknown>>("sessions.create", payload);
+    if (label) {payload.label = label;}
+    if (initialMessage) {payload.initialMessage = initialMessage;}
+    const res = await state.client.request("sessions.create", payload);
     const key = typeof res?.key === "string" ? res.key : typeof res?.sessionKey === "string" ? res.sessionKey : null;
     if (key) {
       await loadSessionsList();
@@ -1120,9 +1120,9 @@ async function createNewSession(label?: string, initialMessage?: string) {
 
 async function promptRenameCurrent() {
   const current = getCurrentSession();
-  if (!current) return;
+  if (!current) {return;}
   const newLabel = prompt("Rename session", current.row.label ?? current.row.subject ?? "");
-  if (!newLabel) return;
+  if (!newLabel) {return;}
   try {
     await state.client?.request("sessions.patch", { key: current.row.key, label: newLabel });
     await loadSessionsList();
@@ -1135,8 +1135,8 @@ async function promptRenameCurrent() {
 
 async function promptGenerateAndRename() {
   const current = getCurrentSession();
-  if (!current) return;
-  const lastUser = [...current.messages].reverse().find((m) => m.role === "user");
+  if (!current) {return;}
+  const lastUser = [...current.messages].toReversed().find((m) => m.role === "user");
   const seed = lastUser?.text ?? current.row.subject ?? "New task";
   openTitleModal(seed);
 }
@@ -1155,15 +1155,15 @@ async function openTitleModal(seed: string) {
     const lastMsgs = recent.slice(-20); // last 20 messages
     // Exclude tool calls, tool results, and obvious JSON/ID fragments from the convo used for title generation
     function isToolOrJsonText(t?: string) {
-      if (!t) return true;
+      if (!t) {return true;}
       const s = t.trim();
       // messages produced from tool fragments often start with these markers
-      if (/^Tool\s+(call|result)\b/i.test(s)) return true;
-      if (/^(Applying|Tool returned|Tool returned)\b/i.test(s)) return true;
+      if (/^Tool\s+(call|result)\b/i.test(s)) {return true;}
+      if (/^(Applying|Tool returned|Tool returned)\b/i.test(s)) {return true;}
       // pure JSON/object/array blobs are useless for title generation
-      if (/^[\{\[]/.test(s)) return true;
+      if (/^[{[]/.test(s)) {return true;}
       // short hex/id-like tokens (e19a3070, 4179) — ignore
-      if (/^[0-9a-fA-F]{3,12}$/.test(s) && !/[aeiouAEIOUаеёиоуыэюяАЕИОУЫЭЮЯ]/.test(s)) return true;
+      if (/^[0-9a-fA-F]{3,12}$/.test(s) && !/[aeiouAEIOUаеёиоуыэюяАЕИОУЫЭЮЯ]/.test(s)) {return true;}
       return false;
     }
     const filteredMsgs = lastMsgs.filter((m) => !isToolOrJsonText(m.text));
@@ -1184,6 +1184,10 @@ async function openTitleModal(seed: string) {
       message: summaryPrompt,
       deliver: false,
       sessionKey: session?.row?.key,
+      // Prefer a lightweight Copilot model for fast title-generation runs.
+      // Use a Copilot model (non-Codex) as requested: 'github-copilot/gpt-4.1-nano' is the fastest
+      // fallback to 'github-copilot/gpt-4.1-mini' if desired.
+      model: 'github-copilot/gpt-4.1-nano',
       idempotencyKey: crypto.randomUUID(),
     });
 
@@ -1226,14 +1230,14 @@ async function openTitleModal(seed: string) {
     if (res && typeof res === 'object') {
       // agent responses commonly come back as payload.result
       const payload = (res as any).result ?? res;
-      if (typeof payload === 'string') textResult = payload;
+      if (typeof payload === 'string') {textResult = payload;}
       else if (payload && typeof payload === 'object') {
-        if (typeof payload.text === 'string') textResult = payload.text;
-        else if (typeof payload.message === 'string') textResult = payload.message;
+        if (typeof payload.text === 'string') {textResult = payload.text;}
+        else if (typeof payload.message === 'string') {textResult = payload.message;}
         else if (Array.isArray(payload.content)) {
           textResult = payload.content.map((c: any) => c?.text ?? '').filter(Boolean).join('\n');
-        } else if (typeof payload.output === 'string') textResult = payload.output;
-        else textResult = JSON.stringify(payload);
+        } else if (typeof payload.output === 'string') {textResult = payload.output;}
+        else {textResult = JSON.stringify(payload);}
       }
     }
 
@@ -1241,23 +1245,23 @@ async function openTitleModal(seed: string) {
     if (!textResult) {
       await loadChatHistory(session!.row.key);
       const msgs = getCurrentSession()?.messages ?? [];
-      const lastAssistant = [...msgs].reverse().find((m) => m.role === 'assistant');
+      const lastAssistant = [...msgs].toReversed().find((m) => m.role === 'assistant');
       textResult = lastAssistant?.text ?? null;
     }
 
     // Postprocess potential JSON-like agent output and try to extract readable lines
     try {
-      if (textResult && (/^[\s\{\[]|\{"/.test(textResult))) {
+      if (textResult && (/^[\s{[]|\{"/.test(textResult))) {
         const parsed = JSON.parse(textResult);
         const collect = (v: any): string[] => {
-          if (v == null) return [];
-          if (typeof v === 'string') return [v];
-          if (Array.isArray(v)) return v.flatMap((e) => collect(e));
-          if (typeof v === 'object') return Object.keys(v).flatMap((k) => collect(v[k]));
+          if (v == null) {return [];}
+          if (typeof v === 'string') {return [v];}
+          if (Array.isArray(v)) {return v.flatMap((e) => collect(e));}
+          if (typeof v === 'object') {return Object.keys(v).flatMap((k) => collect(v[k]));}
           return [];
         };
         const flat = collect(parsed).filter(Boolean).join('\n');
-        if (flat) textResult = flat;
+        if (flat) {textResult = flat;}
       }
     } catch (e) {
       // ignore parse errors — we'll fallback to line filtering below
@@ -1266,20 +1270,20 @@ async function openTitleModal(seed: string) {
     const variants = parseTitleVariants(textResult ?? seed);
     // heuristic to drop strings that look like internal IDs / hex / numbers
     function isLikelyId(s: string): boolean {
-      if (!s) return true;
+      if (!s) {return true;}
       const t = s.trim();
-      if (t.length <= 2) return true;
+      if (t.length <= 2) {return true;}
       // pure numbers, short
-      if (/^[0-9]+$/.test(t) && t.length <= 6) return true;
+      if (/^[0-9]+$/.test(t) && t.length <= 6) {return true;}
       // hex-ish tokens without vowels, e.g. e19a3070, abcd1234
-      if (/^[0-9a-fA-F]+$/.test(t) && t.length >= 3 && t.length <= 12 && !/[aeiouAEIOUаеёиоуыэюяАЕИОУЫЭЮЯ]/.test(t)) return true;
+      if (/^[0-9a-fA-F]+$/.test(t) && t.length >= 3 && t.length <= 12 && !/[aeiouAEIOUаеёиоуыэюяАЕИОУЫЭЮЯ]/.test(t)) {return true;}
       // short single-token alpha-numeric without vowels
-      if (!/\s/.test(t) && t.length <= 4 && !/[aeiouAEIOUаеёиоуыэюяАЕИОУЫЭЮЯ]/.test(t)) return true;
+      if (!/\s/.test(t) && t.length <= 4 && !/[aeiouAEIOUаеёиоуыэюяАЕИОУЫЭЮЯ]/.test(t)) {return true;}
       return false;
     }
 
     const uniqFiltered = Array.from(new Set(variants.map((v) => v.trim())))
-      .filter((v) => !!v && !/^\s*[\{\[]/.test(v) && v.length < 120 && !isLikelyId(v))
+      .filter((v) => !!v && !/^\s*[{[]/.test(v) && v.length < 120 && !isLikelyId(v))
       .slice(0, 3);
 
     state.generatedTitles = uniqFiltered.length ? uniqFiltered : [seed];
@@ -1302,7 +1306,7 @@ function closeTitleModal() {
 }
 
 function parseTitleVariants(text: string): string[] {
-  if (!text) return [];
+  if (!text) {return [];}
   // split by lines, commas, or semicolons and clean
   const lines = text.split(/\r?\n|\s*[-•]\s*|,|;/).map((l) => l.trim()).filter(Boolean);
   const cleaned = lines.map((l) => l.replace(/^\s*['"“”`]+|['"“”`]+\s*$/g, ''));
@@ -1312,17 +1316,17 @@ function parseTitleVariants(text: string): string[] {
   const uniq: string[] = [];
   for (const v of flat) {
     const words = v.split(/\s+/).filter(Boolean);
-    if (words.length > 8) continue;
+    if (words.length > 8) {continue;}
     const candidate = v.replace(/^Title:\s*/i, '').trim();
-    if (candidate && !uniq.includes(candidate)) uniq.push(candidate);
-    if (uniq.length >= 5) break;
+    if (candidate && !uniq.includes(candidate)) {uniq.push(candidate);}
+    if (uniq.length >= 5) {break;}
   }
   return uniq.slice(0, 3);
 }
 
 async function applyGeneratedTitle(title: string) {
   const s = getCurrentSession();
-  if (!s) return;
+  if (!s) {return;}
   s.nameLoading = true;
   rerender();
   try {
