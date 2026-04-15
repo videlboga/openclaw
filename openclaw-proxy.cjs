@@ -6,24 +6,36 @@ const path = require("path");
 const TARGET_HOST = process.env.OPENCLAW_PROXY_TARGET_HOST || "127.0.0.1";
 // HTTP Browser Control (serves the UI)
 // Allow overriding in dev: OPENCLAW_PROXY_HTTP_PORT (or OPENCLAW_PROXY_TARGET_PORT)
-const TARGET_HTTP_PORT = Number(process.env.OPENCLAW_PROXY_HTTP_PORT || process.env.OPENCLAW_PROXY_TARGET_PORT || 18789);
+const TARGET_HTTP_PORT = Number(
+  process.env.OPENCLAW_PROXY_HTTP_PORT || process.env.OPENCLAW_PROXY_TARGET_PORT || 18789,
+);
 // Gateway WebSocket port (control plane)
 // Allow overriding separately via OPENCLAW_PROXY_WS_PORT, otherwise fall back to target port
-const TARGET_WS_PORT = Number(process.env.OPENCLAW_PROXY_WS_PORT || process.env.OPENCLAW_PROXY_TARGET_PORT || TARGET_HTTP_PORT);
+const TARGET_WS_PORT = Number(
+  process.env.OPENCLAW_PROXY_WS_PORT || process.env.OPENCLAW_PROXY_TARGET_PORT || TARGET_HTTP_PORT,
+);
 
 // Optional override via env for testing: OPENCLAW_PROXY_TOKEN
 const ENV_TOKEN = process.env.OPENCLAW_PROXY_TOKEN;
 
 function readTokenFromConfig() {
-  if (ENV_TOKEN) return ENV_TOKEN;
+  if (ENV_TOKEN) {
+    return ENV_TOKEN;
+  }
   try {
     const cfgPath = path.join(os.homedir(), ".openclaw", "openclaw.json");
-    if (!fs.existsSync(cfgPath)) return null;
+    if (!fs.existsSync(cfgPath)) {
+      return null;
+    }
     const raw = fs.readFileSync(cfgPath, "utf8");
     const cfg = JSON.parse(raw);
     // Common locations where the gateway token may be stored
     return (
-      cfg?.gateway?.token || cfg?.gateway?.auth?.token || cfg?.gatewayToken || cfg?.auth?.gateway?.token || null
+      cfg?.gateway?.token ||
+      cfg?.gateway?.auth?.token ||
+      cfg?.gatewayToken ||
+      cfg?.auth?.gateway?.token ||
+      null
     );
   } catch (err) {
     console.error("openclaw-proxy: failed to read token from config:", err && err.message);
@@ -53,7 +65,9 @@ const server = http.createServer((req, res) => {
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   } else {
-    console.warn("openclaw-proxy: no gateway token found; forwarding request without Authorization header");
+    console.warn(
+      "openclaw-proxy: no gateway token found; forwarding request without Authorization header",
+    );
   }
 
   // If this is a browser navigation for HTML, send a redirect that includes
@@ -61,7 +75,12 @@ const server = http.createServer((req, res) => {
   const accept = (req.headers.accept || "").toString();
   const cookieHeader = (req.headers.cookie || "").toString();
   const redirectedCookie = cookieHeader.includes("__openclaw_proxy_redirected=1");
-  if (token && (req.method === "GET" || req.method === "HEAD") && accept.includes("text/html") && !redirectedCookie) {
+  if (
+    token &&
+    (req.method === "GET" || req.method === "HEAD") &&
+    accept.includes("text/html") &&
+    !redirectedCookie
+  ) {
     // Fetch the HTML from the target, inject a small script that sets the
     // URL fragment with the token (so client JS can read it), and return the
     // modified HTML. This avoids redirect loops and works for browsers.
@@ -126,7 +145,9 @@ const server = http.createServer((req, res) => {
     headers,
   };
   const proxyReq = http.request(options, (proxyRes) => {
-    console.log(`[openclaw-proxy] proxied HTTP ${req.method} ${req.url} -> ${TARGET_HOST}:${TARGET_HTTP_PORT} (${proxyRes.statusCode})`);
+    console.log(
+      `[openclaw-proxy] proxied HTTP ${req.method} ${req.url} -> ${TARGET_HOST}:${TARGET_HTTP_PORT} (${proxyRes.statusCode})`,
+    );
     const outHeaders = { ...proxyRes.headers, ...corsHeaders };
     res.writeHead(proxyRes.statusCode, outHeaders);
     proxyRes.pipe(res, { end: true });
@@ -168,7 +189,9 @@ server.on("upgrade", (req, socket, head) => {
 
   const proxyReq = http.request(options);
   proxyReq.on("upgrade", (proxyRes, proxySocket, proxyHead) => {
-    console.log(`[openclaw-proxy] proxied upgrade -> ${TARGET_HOST}:${TARGET_WS_PORT} (${proxyRes.statusCode})`);
+    console.log(
+      `[openclaw-proxy] proxied upgrade -> ${TARGET_HOST}:${TARGET_WS_PORT} (${proxyRes.statusCode})`,
+    );
     try {
       // Write the 101 response back to the client
       socket.write(
@@ -178,7 +201,9 @@ server.on("upgrade", (req, socket, head) => {
             .join("\r\n") +
           "\r\n\r\n",
       );
-      if (proxyHead && proxyHead.length) proxySocket.unshift(proxyHead);
+      if (proxyHead && proxyHead.length) {
+        proxySocket.unshift(proxyHead);
+      }
       socket.pipe(proxySocket).pipe(socket);
     } catch (err) {
       console.error("[openclaw-proxy] upgrade proxy error:", err && err.message);

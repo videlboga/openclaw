@@ -57,6 +57,8 @@ textarea {
   height: min(900px, calc(100vh - 48px));
   border-radius: 24px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border-color);
   background: linear-gradient(180deg, rgba(17, 17, 27, 0.96), rgba(24, 24, 37, 0.98));
   box-shadow:
@@ -107,7 +109,9 @@ textarea {
   background-color: rgba(49, 50, 68, 0.45);
   color: var(--text-main);
   border: 2px solid transparent;
-  background-image: linear-gradient(var(--bg-main), var(--bg-main)), radial-gradient(circle at top left, var(--accent-cyan), var(--accent-blue));
+  background-image:
+    linear-gradient(var(--bg-main), var(--bg-main)),
+    radial-gradient(circle at top left, var(--accent-cyan), var(--accent-blue));
   background-origin: border-box;
   background-clip: padding-box, border-box;
   font-size: 12px;
@@ -115,21 +119,38 @@ textarea {
 
 .lain-main {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 280px;
-  height: calc(100% - 57px);
+  grid-template-columns: var(--contexts-width, 280px) minmax(0, 1fr) var(--hud-width, 260px) 260px;
+  flex: 1;
   min-height: 0;
+  transition: grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .lain-contexts,
-.lain-persona {
+.lain-persona,
+.lain-hud {
   padding: 18px;
   background: rgba(24, 24, 37, 0.92);
   min-height: 0;
+  transition: padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.lain-contexts.is-collapsed,
+.lain-hud.is-collapsed {
+  padding: 18px 8px;
+  justify-content: flex-start;
 }
 
 .lain-contexts {
   border-right: 1px solid var(--border-color);
   overflow: auto;
+}
+
+.lain-hud {
+  border-left: 1px solid var(--border-color);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .lain-persona {
@@ -147,6 +168,35 @@ textarea {
   letter-spacing: 0.14em;
   color: var(--text-muted);
   margin-bottom: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.lain-section-label:hover {
+  color: var(--text-color);
+}
+
+.is-collapsed .lain-section-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  margin-bottom: 0;
+  height: 100%;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+.is-collapsed .lain-section-toggle {
+  transform: rotate(90deg);
+}
+
+.lain-contexts.is-collapsed .lain-context-list,
+.lain-hud.is-collapsed .lain-stream__meta,
+.lain-hud.is-collapsed .lain-quick-actions {
+  display: none !important;
 }
 
 .lain-context-list {
@@ -181,7 +231,9 @@ textarea {
 }
 
 .lain-context.is-active {
-  background-image: linear-gradient(var(--bg-main), var(--bg-main)), radial-gradient(circle at top left, var(--accent-cyan), var(--accent-blue));
+  background-image:
+    linear-gradient(var(--bg-main), var(--bg-main)),
+    radial-gradient(circle at top left, var(--accent-cyan), var(--accent-blue));
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
@@ -268,7 +320,7 @@ textarea {
 
 .lain-chip {
   border: 1px solid rgba(137, 180, 250, 0.24);
-  background: rgba(49, 50, 68, 0.35);
+  background-color: rgba(49, 50, 68, 0.35);
   color: var(--text-main);
   padding: 8px 10px;
   border-radius: 999px;
@@ -278,7 +330,20 @@ textarea {
 
 .lain-chip:hover {
   border-color: rgba(137, 180, 250, 0.48);
-  background: rgba(69, 71, 90, 0.46);
+  background-color: rgba(69, 71, 90, 0.46);
+}
+
+.lain-chip-icon {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  padding: 0;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .lain-messages {
@@ -298,7 +363,6 @@ textarea {
   border: 1px solid var(--border-color);
   background: rgba(24, 24, 37, 0.95);
 }
-
 
 .lain-message--user {
   align-self: flex-end;
@@ -341,7 +405,9 @@ textarea {
 
 .lain-composer textarea:focus {
   outline: none;
-  background-image: linear-gradient(var(--bg-main), var(--bg-main)), radial-gradient(circle at top left, var(--accent-cyan), var(--accent-blue));
+  background-image:
+    linear-gradient(var(--bg-main), var(--bg-main)),
+    radial-gradient(circle at top left, var(--accent-cyan), var(--accent-blue));
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
@@ -459,7 +525,9 @@ textarea {
   font-weight: 700;
   color: var(--text-main);
   border: 2px solid transparent;
-  background-image: linear-gradient(var(--bg-main), var(--bg-main)), radial-gradient(circle at top left, var(--accent-purple), var(--accent-blue));
+  background-image:
+    linear-gradient(var(--bg-main), var(--bg-main)),
+    radial-gradient(circle at top left, var(--accent-purple), var(--accent-blue));
   background-origin: border-box;
   background-clip: padding-box, border-box;
 }
@@ -511,7 +579,8 @@ textarea {
 
   .lain-main {
     grid-template-columns: 1fr;
-    height: calc(100% - 57px);
+    flex: 1;
+    min-height: 0;
   }
 
   .lain-contexts {
