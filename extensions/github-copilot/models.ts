@@ -14,10 +14,10 @@ const DEFAULT_MAX_TOKENS = 8192;
 
 export function resolveCopilotTransportApi(
   modelId: string,
-): "anthropic-messages" | "openai-completions" {
+): "anthropic-messages" | "openai-responses" {
   return (normalizeOptionalLowercaseString(modelId) ?? "").includes("claude")
     ? "anthropic-messages"
-    : "openai-completions";
+    : "openai-responses";
 }
 
 export function resolveCopilotForwardCompatModel(
