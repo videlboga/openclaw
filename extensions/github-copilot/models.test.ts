@@ -89,7 +89,7 @@ describe("github-copilot model defaults", () => {
     it("trims whitespace from model id", () => {
       const def = buildCopilotModelDefinition("  gpt-4o  ");
       expect(def.id).toBe("gpt-4o");
-      expect(def.api).toBe("openai-responses");
+      expect(def.api).toBe("openai-completions");
     });
 
     it("throws on empty model id", () => {
@@ -117,7 +117,7 @@ describe("resolveCopilotForwardCompatModel", () => {
       id: "gpt-5.2-codex",
       name: "gpt-5.2-codex",
       provider: "github-copilot",
-      api: "openai-responses",
+      api: "openai-completions",
       reasoning: true,
       contextWindow: 200_000,
     };
@@ -141,7 +141,7 @@ describe("resolveCopilotForwardCompatModel", () => {
     const result = requireResolvedModel(ctx);
     expect(result.id).toBe("gpt-5.4-mini");
     expect(result.name).toBe("gpt-5.4-mini");
-    expect((result as unknown as Record<string, unknown>).api).toBe("openai-responses");
+    expect((result as unknown as Record<string, unknown>).api).toBe("openai-completions");
     expect((result as unknown as Record<string, unknown>).input).toEqual(["text", "image"]);
   });
 

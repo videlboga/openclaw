@@ -79,7 +79,7 @@ describe("wrapCopilotAnthropicStream", () => {
     void wrapped(
       {
         provider: "github-copilot",
-        api: "openai-responses",
+        api: "something",
         id: "gpt-4.1",
       } as never,
       { messages: [{ role: "user", content: "hi" }] } as never,
@@ -99,7 +99,7 @@ describe("wrapCopilotAnthropicStream", () => {
     void wrapped(
       {
         provider: "github-copilot",
-        api: "openai-responses",
+        api: "openai-completions",
         id: "gpt-4.1",
       } as never,
       { messages: [{ role: "user", content: "hi" }] } as never,
