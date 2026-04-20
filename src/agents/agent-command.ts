@@ -680,6 +680,11 @@ async function agentCommandInternal(
       }
       provider = explicitRef.provider;
       model = explicitRef.model;
+      // When an explicit override is applied, ensure the provider used to
+      // validate any session auth profile is updated to the explicit
+      // provider. Otherwise a stored authProfileOverride may be treated
+      // as belonging to a different provider and be cleared.
+      providerForAuthProfileValidation = explicitRef.provider;
     }
     if (sessionEntry) {
       const authProfileId = sessionEntry.authProfileOverride;
