@@ -42,7 +42,7 @@ export function wrapCopilotAnthropicStream(baseStreamFn: StreamFn | undefined): 
     // OpenAI-compatible Copilot endpoints also require the IDE identity headers
     // for IDE-authenticated calls.
     if (model.api === "openai-responses") {
-      return streamWithPayloadPatch(underlying, model, context, {
+      return underlying(model, context, {
         ...options,
         headers: {
           ...buildCopilotDynamicHeaders({
