@@ -238,12 +238,62 @@ textarea {
   background-clip: padding-box, border-box;
 }
 
+.lain-context {
+  position: relative;
+}
+
+.lain-context__actions {
+  display: none;
+  gap: 6px;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.lain-context:hover .lain-context__actions,
+.lain-context:focus-within .lain-context__actions {
+  display: flex;
+}
+
+.lain-context__actions .action-btn {
+  background: rgba(30, 30, 46, 0.9);
+  border: 1px solid var(--border-color, #585b70);
+  color: var(--text-dim, #a6adc8);
+  cursor: pointer;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  padding: 0;
+  line-height: 1;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+}
+
+.lain-context__actions .action-btn:hover {
+  color: #fff;
+  background: var(--accent-red, #f38ba8);
+  border-color: var(--accent-red, #f38ba8);
+  transform: scale(1.1);
+}
+
+.lain-context__actions .action-btn[title*="рхив"]:hover {
+  background: var(--accent-blue, #89b4fa);
+  border-color: var(--accent-blue, #89b4fa);
+}
+
 .lain-context__row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 6px;
+  padding-right: 42px; /* For overlay circular buttons hover space */
 }
 
 .lain-context__name {

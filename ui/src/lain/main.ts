@@ -1026,6 +1026,11 @@ function app() {
                       >
                         <div class="lain-context__row">
                           <div class="lain-context__name">${context.name}</div>
+                          <div style="flex:1"></div>
+                          <div class="lain-context__actions" @click=${(e: Event) => e.stopPropagation()}>
+                            <div class="action-btn" title="В архив" @click=${() => void deleteSessionItem(context.id, false)}>📥</div>
+                            <div class="action-btn" title="Удалить" @click=${() => void deleteSessionItem(context.id, true)}>✖</div>
+                          </div>
                           ${context.unread ? html`<span class="lain-context__ping"></span>` : ""}
                         </div>
                         <div class="lain-context__status">${context.status}</div>
@@ -1317,6 +1322,28 @@ function rerender() {
   });
 }
 
+async function deleteSessionItem(key: string, entirely: boolean) {
+  if (!state.client) {
+    return;
+  }
+  try {
+    if (entirely) {
+      await state.client.request("sessions.delete", { key, deleteTranscript: true });
+    } else {
+      await state.client.request("sessions.delete", { key });
+    }
+    await loadSessionsList();
+    if (state.currentContextId === key) {
+      const nextId = liveSessions.keys().next().value ?? "main";
+      state.currentContextId = nextId;
+      await setCurrentContext(nextId);
+    }
+  } catch (e) {
+    state.error = String(e);
+    rerender();
+  }
+}
+
 async function createNewSession(label?: string, initialMessage?: string) {
   if (!state.client || !state.connected) {
     state.error = "Not connected to gateway";
@@ -1327,7 +1354,7 @@ async function createNewSession(label?: string, initialMessage?: string) {
   state.status = "Creating new session...";
   rerender();
   try {
-    const payload: Record<string, unknown> = {};
+    const payload: Record<string, unknown> = { agentId: "lain-head" };
     if (label) {
       payload.label = label;
     }
