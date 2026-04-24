@@ -1417,18 +1417,13 @@ async function promptGenerateAndRename() {
 }
 
 async function openTitleModal(seed: string) {
-  state.hudCollapsed = false;
-  state.titleModalOpen = true;
-  state.titleModalSeed = seed;
-  state.generatedTitles = [];
-  state.titleModalSelected = 0;
   state.titleModalLoading = true;
   rerender();
   try {
     // Build a short summary from recent messages to base title generation on dialog context
     const session = getCurrentSession();
     const recent = session?.messages ?? [];
-    const lastMsgs = recent.slice(-20); // last 20 messages
+    const lastMsgs = recent.slice(-3); // last 3 messages
     // Exclude tool calls, tool results, and obvious JSON/ID fragments from the convo used for title generation
     function isToolOrJsonText(t?: string) {
       if (!t) {
@@ -1462,22 +1457,17 @@ async function openTitleModal(seed: string) {
       })
       .join("\n");
 
-    const summaryPrompt = `Кратко (1–2 предложения) резюмируй следующий диалог и затем предложи 3 коротких варианта названия (3–6 слов) для этой сессии. Сначала резюме, затем варианты в отдельных строках:\n\n${convoLines}`;
+    const summaryPrompt = `Создай короткое и емкое название (2-4 слова) описывающее эту беседу. Не пиши ничего кроме самого названия, без кавычек и точек.\n\n${convoLines}`;
 
     // Run title generation in an isolated agent run so we don't write into the session transcript.
     // Provide current sessionKey as context so gateway has a target and won't reject the run.
-    const startRes = await state.client?.request("agent", {
-      message: summaryPrompt,
-      deliver: false,
-      sessionKey: session?.row?.key,
-      // Prefer a lightweight Copilot model for fast title-generation runs.
-      // Use a Copilot model (non-Codex) as requested: 'github-copilot/gpt-4.1-nano' is the fastest
-      // fallback to 'github-copilot/gpt-4.1-mini' if desired.
-      model: "github-copilot/gpt-4.1-nano",
-      idempotencyKey: crypto.randomUUID(),
-    });
-
-    // If the gateway immediately returned an error (e.g. missing target), surface it and stop.
+      const startRes = await state.client?.request("agent", {
+        message: summaryPrompt,
+        deliver: false,
+        sessionKey: session?.row?.key,
+        agentId: "lain-head",
+        idempotencyKey: crypto.randomUUID(),
+      });    // If the gateway immediately returned an error (e.g. missing target), surface it and stop.
     if (startRes && typeof startRes === "object" && (startRes as any).status === "error") {
       state.error = (startRes as any).error ?? (startRes as any).errorMessage ?? "Agent run failed";
       state.titleModalLoading = false;
@@ -1574,45 +1564,19 @@ async function openTitleModal(seed: string) {
       // ignore parse errors — we'll fallback to line filtering below
     }
 
-    const variants = parseTitleVariants(textResult ?? seed);
-    // heuristic to drop strings that look like internal IDs / hex / numbers
-    function isLikelyId(s: string): boolean {
-      if (!s) {
-        return true;
-      }
-      const t = s.trim();
-      if (t.length <= 2) {
-        return true;
-      }
-      // pure numbers, short
-      if (/^[0-9]+$/.test(t) && t.length <= 6) {
-        return true;
-      }
-      // hex-ish tokens without vowels, e.g. e19a3070, abcd1234
-      if (
-        /^[0-9a-fA-F]+$/.test(t) &&
-        t.length >= 3 &&
-        t.length <= 12 &&
-        !/[aeiouAEIOUаеёиоуыэюяАЕИОУЫЭЮЯ]/.test(t)
-      ) {
-        return true;
-      }
-      // short single-token alpha-numeric without vowels
-      if (!/\s/.test(t) && t.length <= 4 && !/[aeiouAEIOUаеёиоуыэюяАЕИОУЫЭЮЯ]/.test(t)) {
-        return true;
-      }
-      return false;
+    let finalTitle = textResult?.trim();
+    if (!finalTitle || /^[{[]|^\s*$/.test(finalTitle) || finalTitle.length > 50) {
+      console.warn("Generated title seems invalid or too long. Abandoning auto-rename.", finalTitle);
+      return;
     }
 
-    const uniqFiltered = Array.from(new Set(variants.map((v) => v.trim())))
-      .filter((v) => !!v && !/^\s*[{[]/.test(v) && v.length < 120 && !isLikelyId(v))
-      .slice(0, 3);
+    finalTitle = finalTitle.replace(/^["'«„]+|["'»”]+$/g, "");
 
-    state.generatedTitles = uniqFiltered.length ? uniqFiltered : [seed];
-    state.titleModalSelected = 0;
+    applyGeneratedTitle(finalTitle);
+    return;
   } catch (err) {
     state.error = String(err);
-    state.generatedTitles = [seed];
+    console.error("Title generation failed:", err);
   } finally {
     state.titleModalLoading = false;
     rerender();
