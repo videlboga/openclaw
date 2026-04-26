@@ -999,7 +999,7 @@ function app() {
         class="lain-main"
         style="
           --contexts-width: ${state.contextsCollapsed ? "44px" : "280px"};
-          --hud-width: ${state.hudCollapsed ? "44px" : "260px"};
+          --persona-width: 400px;
         "
       >
         <aside class="lain-contexts ${state.contextsCollapsed ? "is-collapsed" : ""}">
@@ -1596,10 +1596,17 @@ async function initLive2D() {
     model.autoUpdate = false;
     (window as any).__live2d_model = model;
 
-    model.anchor.set(0.5, 0.5);
-    model.position.set(canvas.width / 2, canvas.height / 2);
-    const scale = Math.min(canvas.width / (model.width || 1), canvas.height / (model.height || 1)) * 0.9;
-    model.scale.set(scale);
+    model.anchor.set(0.5, 1.0); // anchor to bottom center
+    
+    const updateSize = () => {
+        model.position.set(canvas.width / 2, canvas.height);
+        // Calculate scale to fit height
+        const scale = (canvas.height / (model.height / model.scale.y)) * 0.95;
+        model.scale.set(scale);
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
 
     let blink = 1.0;
     let blinkT = 100;

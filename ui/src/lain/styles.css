@@ -119,7 +119,7 @@ textarea {
 
 .lain-main {
   display: grid;
-  grid-template-columns: var(--contexts-width, 280px) minmax(0, 1fr) var(--hud-width, 260px) 260px;
+  grid-template-columns: var(--contexts-width, 280px) minmax(0, 1fr) 400px;
   flex: 1;
   min-height: 0;
   transition: grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -157,9 +157,9 @@ textarea {
   border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 18px;
+  position: relative;
+  overflow: hidden;
+  background: #000;
 }
 
 .lain-section-label {
