@@ -413,7 +413,7 @@ async function submitComposer(prefill?: string) {
     await state.client.request("chat.send", {
       sessionKey: session.row.key,
       message: text,
-      deliver: false,
+      deliver: true,
       idempotencyKey: crypto.randomUUID(),
       attachments: session.attachments.map((att) => ({
         type: "image",
