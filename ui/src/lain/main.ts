@@ -1737,8 +1737,9 @@ async function initLive2D() {
         targetX = 0;
         targetY = -0.5;
       } else {
-        targetX = fX * 0.5;
-        targetY = fY * 0.5;
+        // Idle: stay centered with very slight breathing movement
+        targetX = Math.sin(Date.now() / 5000) * 0.05;
+        targetY = Math.cos(Date.now() / 7000) * 0.05;
       }
 
       core.setParameterValueById('ParamEyeLOpen', blink);
