@@ -1200,7 +1200,7 @@ function app() {
         
 
         <aside class="lain-persona" style="position: relative; flex: 1; display: flex; flex-direction: column;">
-          <canvas id="lain-live2d-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 1;"></canvas>
+          <canvas id="lain-live2d-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; pointer-events: none; z-index: 1;"></canvas>
           <div style="position: relative; z-index: 2; padding: 20px; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%); pointer-events: none;">
             <div class="lain-state" style="font-size: 0.8rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 2px;">${current?.mood ?? "idle"}</div>
             <div class="lain-ambient" style="font-size: 0.9rem; max-width: 400px; margin-top: 8px; line-height: 1.4; color: #a0a0a0;">
@@ -1601,7 +1601,7 @@ async function initLive2D() {
     const updateSize = () => {
         model.position.set(canvas.width / 2, canvas.height);
         // Calculate scale to fit height
-        const scale = (canvas.height / (model.height / model.scale.y)) * 0.95;
+        const scale = (canvas.height / (model.height / model.scale.y)) * 1.0;
         model.scale.set(scale);
     };
     
@@ -1629,7 +1629,7 @@ async function initLive2D() {
       if (blinkT <= 0) {closing = true;}
       if (closing) {
         blink -= 0.1 * delta;
-        if (blink <= 0) { blink = 0; closing = false; blinkT = 100 + Math.random() * 300; }
+        if (blink <= 0) { blink = 0; closing = false; blinkT = 250 + Math.random() * 800; }
       } else if (blink < 1) {
         blink += 0.1 * delta;
         if (blink > 1) {blink = 1;}
