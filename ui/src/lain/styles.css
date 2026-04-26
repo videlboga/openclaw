@@ -647,3 +647,14 @@ textarea {
     align-items: stretch;
   }
 }
+
+.lain-persona {
+  flex: 1.5 !important; /* Give more space to Lain */
+  border-left: 1px solid rgba(255,255,255,0.1);
+  background: #0a0a0a;
+  overflow: hidden;
+}
+
+.lain-portrait-wrap, .lain-portrait-glow, .lain-portrait {
+  display: none !important;
+}

@@ -1197,110 +1197,15 @@ function app() {
           </div>
         </section>
 
-        <aside class="lain-hud ${state.hudCollapsed ? "is-collapsed" : ""}">
-          <div
-            class="lain-section-label"
-            @click=${() => {
-              state.hudCollapsed = !state.hudCollapsed;
-              rerender();
-            }}
-          >
-            <span>hud</span>
-            <span class="lain-section-toggle">${state.hudCollapsed ? "«" : "»"}</span>
-          </div>
-          <div class="lain-stream__meta" style="flex: 1; padding: 0;">
-            <div style="margin-bottom: 24px;">
-              <div class="lain-project">Current project: <br />${current?.project ?? "none"}</div>
-              <br />
-              <div class="lain-context-label">Gateway: <br />${state.gatewayUrl}</div>
-            </div>
-            <div class="lain-quick-actions">
-              <div
-                class="lain-task-status"
-                style="padding: 12px; border-radius: 8px; background: rgba(0,0,0,0.2);"
-              >
-                Task status: <br /><strong>${current?.taskStatus ?? "no-active-run"}</strong>
-              </div>
-            </div>
-            ${
-              state.titleModalOpen
-                ? html` <div
-                    class="lain-title-modal"
-                    style="position:relative; transform:none; top:0; left:0; margin-top:24px;"
-                  >
-                    <div class="lain-title-modal__panel">
-                      <div class="lain-title-modal__header">Предложенные названия</div>
-                      ${state.titleModalLoading
-                        ? html`<div class="lain-title-modal__body">Генерирую варианты…</div>`
-                        : html`
-                            <div class="lain-title-modal__body">
-                              ${state.generatedTitles.map(
-                                (t, i) =>
-                                  html`<div
-                                    class="lain-title-option ${state.titleModalSelected === i
-                                      ? "is-selected"
-                                      : ""}"
-                                    @click=${() => {
-                                      state.titleModalSelected = i;
-                                      rerender();
-                                    }}
-                                  >
-                                    ${t}
-                                  </div>`,
-                              )}
-                            </div>
-                            <div class="lain-title-modal__actions">
-                              <button
-                                class="lain-chip"
-                                @click=${() =>
-                                  applyGeneratedTitle(
-                                    state.generatedTitles[state.titleModalSelected] ??
-                                      state.titleModalSeed ??
-                                      "Untitled",
-                                  )}
-                              >
-                                Применить
-                              </button>
-                              <button
-                                class="lain-chip lain-chip-icon"
-                                @click=${() => {
-                                  const s = getCurrentSession();
-                                  if (!s) {
-                                    return;
-                                  }
-                                  s.nameEditing = true;
-                                  s.nameDraft =
-                                    state.generatedTitles[state.titleModalSelected] ??
-                                    state.titleModalSeed ??
-                                    "";
-                                  closeTitleModal();
-                                }}
-                              >
-                                Редактировать
-                              </button>
-                              <button class="lain-chip" @click=${() => closeTitleModal()}>
-                                Отмена
-                              </button>
-                            </div>
-                          `}
-                    </div>
-                  </div>`
-                : nothing
-            }
-          </div>
-        </aside>
+        
 
-        <aside class="lain-persona" style="position: relative;">
-          <canvas id="lain-live2d-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 10;"></canvas>
-          <div class="lain-portrait-wrap">
-            <div class="lain-portrait-glow"></div>
-            <div class="lain-portrait">
-              ${(state.assistantAvatar || state.assistantName || "L").slice(0, 1)}
+        <aside class="lain-persona" style="position: relative; flex: 1; display: flex; flex-direction: column;">
+          <canvas id="lain-live2d-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 1;"></canvas>
+          <div style="position: relative; z-index: 2; padding: 20px; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%); pointer-events: none;">
+            <div class="lain-state" style="font-size: 0.8rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 2px;">${current?.mood ?? "idle"}</div>
+            <div class="lain-ambient" style="font-size: 0.9rem; max-width: 400px; margin-top: 8px; line-height: 1.4; color: #a0a0a0;">
+              ${current?.ambient ?? "Trying to listen to the house through the wires."}
             </div>
-          </div>
-          <div class="lain-state">${current?.mood ?? "idle"}</div>
-          <div class="lain-ambient">
-            ${current?.ambient ?? "Trying to listen to the house through the wires."}
           </div>
         </aside>
       </main>
