@@ -1688,7 +1688,7 @@ async function initLive2D() {
     });
 
     const { Live2DModel } = (window as any).PIXI.live2d;
-    const model = await Live2DModel.from('/live2d/shizuka/小静.model3.json');
+    const model = await Live2DModel.from('/live2d/custom/ChatGPT Image 14 апр.model3.json');
     app.stage.addChild(model);
     
     // Auto-scale to fit
