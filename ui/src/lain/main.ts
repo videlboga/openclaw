@@ -414,7 +414,6 @@ async function submitComposer(prefill?: string) {
       sessionKey: session.row.key,
       message: text,
       deliver: true,
-      agentId: "lain-head",
       idempotencyKey: crypto.randomUUID(),
       attachments: session.attachments.map((att) => ({
         type: "image",
