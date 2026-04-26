@@ -35,17 +35,17 @@ function hasScriptSrcAttribute(openTag: string): boolean {
 export function buildControlUiCspHeader(opts?: { inlineScriptHashes?: string[] }): string {
   const hashes = opts?.inlineScriptHashes;
   const scriptSrc = hashes?.length
-    ? `script-src 'self' ${hashes.map((h) => `'${h}'`).join(" ")}`
-    : "script-src 'self'";
+    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cubism.live2d.com https://cdn.jsdelivr.net ${hashes.map((h) => `'${h}'`).join(" ")}`
+    : "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cubism.live2d.com https://cdn.jsdelivr.net";
   return [
-    "default-src 'self'",
+    "default-src 'self' 'unsafe-eval' 'unsafe-inline' https://cubism.live2d.com https://cdn.jsdelivr.net",
     "base-uri 'none'",
     "object-src 'none'",
     "frame-ancestors 'none'",
     scriptSrc,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: https:",
-    "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' ws: wss:",
+    "style-src 'self' 'unsafe-eval' 'unsafe-inline' https://cubism.live2d.com https://cdn.jsdelivr.net 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' 'unsafe-eval' 'unsafe-inline' https://cubism.live2d.com https://cdn.jsdelivr.net data: https:",
+    "font-src 'self' 'unsafe-eval' 'unsafe-inline' https://cubism.live2d.com https://cdn.jsdelivr.net https://fonts.gstatic.com",
+    "connect-src 'self' 'unsafe-eval' 'unsafe-inline' https://cubism.live2d.com https://cdn.jsdelivr.net ws: wss:",
   ].join("; ");
 }

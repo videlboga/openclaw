@@ -790,7 +790,10 @@ function buildLainChatItems(messages: ChatMessage[]): Array<ChatItem | MessageGr
       role: msg.role,
       content: msg.content ?? [{ type: "text", text: msg.text }],
       text: msg.text,
-      timestamp: Date.now() + index,
+      // Preserve incoming timestamp when provided by the server/backend. If absent,
+      // fall back to a monotonic per-index timestamp to keep ordering stable.
+  // msg.timestamp may be absent from the ChatMessage type; cast to any to access if present.
+  timestamp: typeof (msg as any).timestamp === "number" ? (msg as any).timestamp : Date.now() + index,
     },
   }));
   return groupMessages(items);
@@ -1287,7 +1290,8 @@ function app() {
           </div>
         </aside>
 
-        <aside class="lain-persona">
+        <aside class="lain-persona" style="position: relative;">
+          <canvas id="lain-live2d-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 10;"></canvas>
           <div class="lain-portrait-wrap">
             <div class="lain-portrait-glow"></div>
             <div class="lain-portrait">
@@ -1422,9 +1426,10 @@ async function openTitleModal(seed: string) {
   try {
     // Build a short summary from recent messages to base title generation on dialog context
     const session = getCurrentSession();
-    const recent = session?.messages ?? [];
-    const lastMsgs = recent.slice(-3); // last 3 messages
-    // Exclude tool calls, tool results, and obvious JSON/ID fragments from the convo used for title generation
+  const recent = session?.messages ?? [];
+  // take the last 3 user/assistant messages (ignore system/tool entries)
+  const lastMsgs = recent.filter((m) => m.role === "user" || m.role === "assistant").slice(-3);
+  // Exclude tool calls, tool results, and obvious JSON/ID fragments from the convo used for title generation
     function isToolOrJsonText(t?: string) {
       if (!t) {
         return true;
@@ -1460,14 +1465,19 @@ async function openTitleModal(seed: string) {
     const summaryPrompt = `Создай короткое и емкое название (2-4 слова) описывающее эту беседу. Не пиши ничего кроме самого названия, без кавычек и точек.\n\n${convoLines}`;
 
     // Run title generation in an isolated agent run so we don't write into the session transcript.
-    // Provide current sessionKey as context so gateway has a target and won't reject the run.
-      const startRes = await state.client?.request("agent", {
-        message: summaryPrompt,
-        deliver: false,
-        sessionKey: session?.row?.key,
-        agentId: "lain-head",
-        idempotencyKey: crypto.randomUUID(),
-      });    // If the gateway immediately returned an error (e.g. missing target), surface it and stop.
+    // Do NOT pass sessionKey here; keeping the run unattached prevents the agent from writing into the
+    // session. We still set deliver:false so the gateway won't append a visible assistant message.
+    const startRes = await state.client?.request("agent", {
+      message: summaryPrompt,
+      deliver: false,
+      // target the current session so we don't spawn a new one, but ask the
+      // server not to persist the transcript for this run.
+      sessionKey: session?.row?.key,
+      agentId: "lain-head",
+      idempotencyKey: crypto.randomUUID(),
+      noSessionPersistence: true,
+    });
+    // If the gateway immediately returned an error (e.g. missing target), surface it and stop.
     if (startRes && typeof startRes === "object" && (startRes as any).status === "error") {
       state.error = (startRes as any).error ?? (startRes as any).errorMessage ?? "Agent run failed";
       state.titleModalLoading = false;
@@ -1528,11 +1538,14 @@ async function openTitleModal(seed: string) {
       }
     }
 
-    // fallback: if no direct text in the agent response, try loading history and taking last assistant message
+    // fallback: if no direct text in the agent response, choose the last in-memory assistant
+    // message that doesn't look like a tool/JSON fragment. Avoid loading history which can
+    // pull in tool-run transcripts.
     if (!textResult) {
-      await loadChatHistory(session!.row.key);
       const msgs = getCurrentSession()?.messages ?? [];
-      const lastAssistant = [...msgs].toReversed().find((m) => m.role === "assistant");
+      const lastAssistant = [...msgs]
+        .toReversed()
+        .find((m) => m.role === "assistant" && !isToolOrJsonText(m.text));
       textResult = lastAssistant?.text ?? null;
     }
 
@@ -1654,6 +1667,39 @@ async function init() {
     rerender();
   });
   connect();
+  setTimeout(initLive2D, 100);
 }
 
 void init();
+
+async function initLive2D() {
+  const canvas = document.getElementById("lain-live2d-canvas") as HTMLCanvasElement;
+  if (!canvas) {
+    console.warn("Live2D canvas not found");
+    return;
+  }
+  
+  try {
+    const app = new (window as any).PIXI.Application({
+      view: canvas,
+      autoStart: true,
+      backgroundAlpha: 0,
+      resizeTo: canvas.parentElement || window
+    });
+
+    const { Live2DModel } = (window as any).PIXI.live2d;
+    const model = await Live2DModel.from('/live2d/shizuka/小静.model3.json');
+    app.stage.addChild(model);
+    
+    // Auto-scale to fit
+    const scaleX = canvas.width / model.width;
+    const scaleY = canvas.height / model.height;
+    model.scale.set(Math.min(scaleX, scaleY) * 0.9);
+    model.anchor.set(0.5, 0.5);
+    model.position.set(canvas.width / 2, canvas.height / 2);
+    
+    console.log("Live2D model loaded perfectly!");
+  } catch (err) {
+    console.error("Live2D initialization failed:", err);
+  }
+}

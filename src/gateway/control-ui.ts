@@ -61,6 +61,10 @@ function contentTypeForExt(ext: string): string {
     case ".svg":
       return "image/svg+xml";
     case ".png":
+    case ".moc3":
+    case ".model3.json":
+    case ".physics3.json":
+      return "application/octet-stream";
       return "image/png";
     case ".jpg":
     case ".jpeg":
@@ -95,7 +99,7 @@ const STATIC_ASSET_EXTENSIONS = new Set([
   ".jpg",
   ".jpeg",
   ".gif",
-  ".webp",
+  ".webp", ".moc3", ".model3.json", ".physics3.json",
   ".ico",
   ".txt",
 ]);
@@ -409,15 +413,16 @@ export function handleControlUiHttpRequest(
 
   const uiPath =
     basePath && pathname.startsWith(`${basePath}/`) ? pathname.slice(basePath.length) : pathname;
+  const decodedUiPath = decodeURIComponent(uiPath);
   const rel = (() => {
-    if (uiPath === ROOT_PREFIX) {
+    if (decodedUiPath === ROOT_PREFIX) {
       return "";
     }
-    const assetsIndex = uiPath.indexOf("/assets/");
+    const assetsIndex = decodedUiPath.indexOf("/assets/");
     if (assetsIndex >= 0) {
-      return uiPath.slice(assetsIndex + 1);
+      return decodedUiPath.slice(assetsIndex + 1);
     }
-    return uiPath.slice(1);
+    return decodedUiPath.slice(1);
   })();
   const requested = rel && !rel.endsWith("/") ? rel : `${rel}index.html`;
   const fileRel = requested || "index.html";
