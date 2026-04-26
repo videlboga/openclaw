@@ -439,7 +439,7 @@ function adjustTextareaHeight(el: HTMLTextAreaElement) {
   el.style.height = `${Math.min(el.scrollHeight, 150)}px`;
 }
 
-function isUserNearBottom(threshold = 200) {
+function _isUserNearBottom(threshold = 200) {
   try {
     const root = document.querySelector<HTMLElement>(".chat-thread");
     if (!root) {
@@ -457,7 +457,7 @@ function isUserNearBottom(threshold = 200) {
       (scrollable.scrollHeight || 0) -
       ((scrollable.scrollTop || 0) + (scrollable.clientHeight || 0));
     return distanceFromBottom <= threshold;
-  } catch (e) {
+  } catch (_e) {
     return true;
   }
 }
@@ -478,11 +478,11 @@ function scrollChatToBottom(smooth = false) {
         window.setTimeout(() => {
           try {
             last.scrollIntoView({ block: "end", inline: "nearest", behavior: "auto" });
-          } catch (e) {}
+          } catch (_e) {}
         }, 120);
         return;
       }
-    } catch (e) {
+    } catch (_e) {
       // fall through
     }
 
@@ -506,10 +506,10 @@ function scrollChatToBottom(smooth = false) {
             } else {
               el.scrollTop = el.scrollHeight;
             }
-          } catch (e) {}
+          } catch (_e) {}
           return;
         }
-      } catch (e) {}
+      } catch (_e) {}
     }
 
     try {
@@ -518,7 +518,7 @@ function scrollChatToBottom(smooth = false) {
       } else {
         root.scrollTop = root.scrollHeight;
       }
-    } catch (e) {}
+    } catch (_e) {}
   });
 }
 
@@ -934,7 +934,7 @@ function app() {
                               label: s.nameDraft,
                             });
                             await loadSessionsList();
-                          } catch (e) {
+                          } catch (_e) {
                             s.row.label = prevLabel;
                             state.error = String(e);
                           } finally {
@@ -1342,7 +1342,7 @@ async function deleteSessionItem(key: string, entirely: boolean) {
       state.currentContextId = nextId;
       await setCurrentContext(nextId);
     }
-  } catch (e) {
+  } catch (_e) {
     state.error = String(e);
     rerender();
   }
@@ -1391,7 +1391,7 @@ async function createNewSession(label?: string, initialMessage?: string) {
   }
 }
 
-async function promptRenameCurrent() {
+async function _promptRenameCurrent() {
   const current = getCurrentSession();
   if (!current) {
     return;
@@ -1404,7 +1404,7 @@ async function promptRenameCurrent() {
     await state.client?.request("sessions.patch", { key: current.row.key, label: newLabel });
     await loadSessionsList();
     await setCurrentContext(current.row.key);
-  } catch (e) {
+  } catch (_e) {
     state.error = String(e);
     rerender();
   }
@@ -1497,11 +1497,11 @@ async function openTitleModal(seed: string) {
           if (waited) {
             res = waited;
           }
-        } catch (e) {
+        } catch (_e) {
           // ignore wait errors and fall back to startRes
         }
       }
-    } catch (e) {}
+    } catch (_e) {}
 
     // Debug helper: expose raw agent response for inspection in the browser console
     try {
@@ -1511,8 +1511,8 @@ async function openTitleModal(seed: string) {
       // use console.log to increase visibility
       try {
         console.log("lain: agent raw response", res);
-      } catch (e) {}
-    } catch (e) {}
+      } catch (_e) {}
+    } catch (_e) {}
 
     let textResult: string | null = null;
     if (res && typeof res === "object") {
@@ -1573,7 +1573,7 @@ async function openTitleModal(seed: string) {
           textResult = flat;
         }
       }
-    } catch (e) {
+    } catch (_e) {
       // ignore parse errors — we'll fallback to line filtering below
     }
 
@@ -1604,7 +1604,7 @@ function closeTitleModal() {
   rerender();
 }
 
-function parseTitleVariants(text: string): string[] {
+function _parseTitleVariants(text: string): string[] {
   if (!text) {
     return [];
   }
@@ -1646,7 +1646,7 @@ async function applyGeneratedTitle(title: string) {
     await loadSessionsList();
     await setCurrentContext(s.row.key);
     closeTitleModal();
-  } catch (e) {
+  } catch (_e) {
     state.error = String(e);
     rerender();
   } finally {
@@ -1673,33 +1673,66 @@ async function init() {
 void init();
 
 async function initLive2D() {
-  const canvas = document.getElementById("lain-live2d-canvas") as HTMLCanvasElement;
-  if (!canvas) {
-    console.warn("Live2D canvas not found");
-    return;
-  }
-  
+  const canvas = document.getElementById('lain-live2d-canvas') as HTMLCanvasElement;
+  if (!canvas) {return;}
   try {
-    const app = new (window as any).PIXI.Application({
-      view: canvas,
-      autoStart: true,
-      backgroundAlpha: 0,
-      resizeTo: canvas.parentElement || window
-    });
-
-    const { Live2DModel } = (window as any).PIXI.live2d;
+    const { PIXI } = window as any;
+    const { Live2DModel } = PIXI.live2d;
     const model = await Live2DModel.from('/live2d/custom/ChatGPT Image 14 апр.model3.json');
+    
+    const app = new PIXI.Application({ 
+      view: canvas, 
+      autoStart: true, 
+      backgroundAlpha: 0, 
+      resizeTo: canvas.parentElement || window 
+    });
     app.stage.addChild(model);
     
-    // Auto-scale to fit
-    const scaleX = canvas.width / model.width;
-    const scaleY = canvas.height / model.height;
-    model.scale.set(Math.min(scaleX, scaleY) * 0.9);
+    model.autoUpdate = false;
+    (window as any).__live2d_model = model;
+
     model.anchor.set(0.5, 0.5);
     model.position.set(canvas.width / 2, canvas.height / 2);
-    
-    console.log("Live2D model loaded perfectly!");
+    const scale = Math.min(canvas.width / (model.width || 1), canvas.height / (model.height || 1)) * 0.9;
+    model.scale.set(scale);
+
+    let blink = 1.0;
+    let blinkT = 100;
+    let closing = false;
+    let fX = 0, fY = 0;
+
+    window.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      fX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      fY = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+    });
+
+    app.ticker.add((delta: number) => {
+      const core = model.internalModel.coreModel;
+      
+      // 1. Моргание
+      if (blinkT <= 0) {closing = true;}
+      if (closing) {
+        blink -= 0.3 * delta;
+        if (blink <= 0) { blink = 0; closing = false; blinkT = 60 + Math.random() * 200; }
+      } else if (blink < 1) {
+        blink += 0.3 * delta;
+        if (blink > 1) {blink = 1;}
+      } else { blinkT -= delta; }
+      
+      // 2. Установка параметров
+      core.setParameterValueById('ParamEyeLOpen', blink);
+      core.setParameterValueById('ParamEyeROpen', blink);
+      core.setParameterValueById('ParamEyeBallX', fX);
+      core.setParameterValueById('ParamEyeBallY', fY);
+      
+      // 3. ОБЯЗАТЕЛЬНО: model.update() после записи в core
+      model.update(delta);
+    });
+
+    console.log('LIVE2D RE-INIT: Manual loop active');
   } catch (err) {
-    console.error("Live2D initialization failed:", err);
+    console.error('Live2D Error:', err);
   }
 }
+setTimeout(initLive2D, 1000);
