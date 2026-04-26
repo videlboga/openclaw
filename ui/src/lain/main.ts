@@ -414,6 +414,7 @@ async function submitComposer(prefill?: string) {
       sessionKey: session.row.key,
       message: text,
       deliver: true,
+      agentId: "lain-head",
       idempotencyKey: crypto.randomUUID(),
       attachments: session.attachments.map((att) => ({
         type: "image",
@@ -569,6 +570,7 @@ function onComposerKeydown(event: KeyboardEvent) {
 }
 
 function handleGatewayEvent(evt: GatewayEventFrame) {
+  console.log("Lain Event:", evt.event, evt.payload);
   if (evt.event === "sessions.changed") {
     void loadSessionsList();
     return;
