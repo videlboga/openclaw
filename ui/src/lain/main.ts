@@ -604,16 +604,12 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
     session.isStreaming = true;
     session.isStreaming = true;
     const toolStatus = extractToolStatus(payload?.message);
-    if (toolStatus) {
-      session.toolStatus = toolStatus;
+    session.toolStatus = toolStatus || null;
+    const nextMessage = normalizedMessageToChatMessage(payload?.message);
+    if (!nextMessage) {
       rerender();
       return;
     }
-    const nextMessage = normalizedMessageToChatMessage(payload?.message);
-    if (!nextMessage) {
-      return;
-    }
-    session.toolStatus = null;
     const last = session.messages[session.messages.length - 1];
     let appended = false;
     if (last?.role === nextMessage.role && nextMessage.role === "assistant") {
