@@ -1,3 +1,5 @@
+import { unsafeHTML } from "lit-html/directives/unsafe-html.js";
+import { toSanitizedMarkdownHtml } from "../ui/markdown.ts";
 import "./styles.css";
 import "../styles/chat.css";
 import { html, render, nothing } from "lit-html";
@@ -836,544 +838,76 @@ function buildLainChatItems(messages: ChatMessage[]): Array<ChatItem | MessageGr
 
 
 function renderMessageContent(contentArray, fallbackText) {
+  const renderText = (text) => {
+    if (!text || text === " ") return html`${text}`;
+    
+    // Check for pipeline block
+    const pipelineMatch = text.match(/\`\`\`json\s+pipeline\s+([\s\S]*?)\`\`\`/);
+    if (pipelineMatch) {
+      const before = text.substring(0, pipelineMatch.index);
+      const after = text.substring(pipelineMatch.index + pipelineMatch[0].length);
+      let pipelineData = null;
+      try {
+        pipelineData = JSON.parse(pipelineMatch[1]);
+      } catch (e) {
+        console.error("Failed to parse pipeline JSON", e);
+      }
+      
+      const pipelineUI = pipelineData ? html`
+        <div style="margin: 12px 0; padding: 12px; background: rgba(203,166,247,0.15); border: 1px solid #cba6f7; border-radius: 8px;">
+          <h4 style="margin:0 0 8px 0; color: #cba6f7;">🚀 Pipeline Protocol: ${pipelineData.pipelineId || 'Unnamed'}</h4>
+          <div style="font-size: 0.9em; opacity: 0.9; margin-bottom: 8px;">
+            <strong>Workspace:</strong> ${pipelineData.workspaceDir || 'current'}<br/>
+            <strong>Agents:</strong> ${pipelineData.agents ? pipelineData.agents.map(a => a.id).join(', ') : 'none'}
+          </div>
+          <button style="background: #cba6f7; color: #1e1e2e; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold;" @click=${() => submitComposer("Отлично, развертывай: " + pipelineData.pipelineId)}>
+            Execute Pipeline
+          </button>
+        </div>` : html`<div style="color:red">Invalid pipeline format</div>`;
+        
+      return html`
+        <div class="lain-md">${unsafeHTML(toSanitizedMarkdownHtml(before))}</div>
+        ${pipelineUI}
+        <div class="lain-md">${unsafeHTML(toSanitizedMarkdownHtml(after))}</div>
+      `;
+    }
+
+    return html`<div class="lain-md markdown-body" style="word-break: break-word;">${unsafeHTML(toSanitizedMarkdownHtml(text))}</div>`;
+  };
+
   if (!contentArray || !Array.isArray(contentArray) || contentArray.length === 0) {
-    return html`<div style="white-space: pre-wrap;">${fallbackText}</div>`;
+    return renderText(fallbackText);
   }
   return contentArray.map(item => {
     if (item.type === 'text') {
-      // Ignore empty texts from pending assistant
-      if (!item.text || item.text === " ") return html`${item.text}`;
-      return html`<div style="white-space: pre-wrap;">${item.text}</div>`;
+      return renderText(item.text);
     }
     if (item.type === 'tool_call' || item.name) {
       let argsStr = "";
       if (item.args) {
         argsStr = typeof item.args === 'string' ? item.args : JSON.stringify(item.args, null, 2);
       }
-      return html`<div style="margin: 8px 0; background: rgba(203,166,247,0.1); border-left: 2px solid #cba6f7; padding: 8px; border-radius: 0 4px 4px 0; font-family: monospace; font-size: 0.85em;">
+      // truncate long arguments visually
+      return html`<div style="margin: 8px 0; background: rgba(203,166,247,0.1); border-left: 2px solid #cba6f7; padding: 8px; border-radius: 0 4px 4px 0; font-family: monospace; font-size: 0.85em; word-break: break-all;">
         <div style="color: #cba6f7; font-weight: bold; margin-bottom: argsStr ? '4px' : '0';">${item.name || item.type || 'tool'}</div>
-        ${argsStr ? html`<div style="opacity: 0.8; white-space: pre-wrap; word-break: break-all;">${argsStr}</div>` : ''}
+        ${argsStr ? html`<div style="opacity: 0.8; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">${argsStr}</div>` : ''}
       </div>`;
     }
     if (item.type === 'tool_result') {
-      return html`<div style="margin: 8px 0; background: rgba(166,227,161,0.1); border-left: 2px solid #a6e3a1; padding: 8px; border-radius: 0 4px 4px 0; font-family: monospace; font-size: 0.85em;">
+      // Check if item.text has pipeline
+      if (item.text && item.text.includes('json pipeline')) {
+        return html`<div style="margin: 8px 0; background: rgba(166,227,161,0.1); border-left: 2px solid #a6e3a1; padding: 8px; border-radius: 0 4px 4px 0; font-family: monospace; font-size: 0.85em; word-break: break-all;">
+          <div style="color: #a6e3a1; font-weight: bold; margin-bottom: 4px;">${item.name || 'tool_result'}</div>
+          ${renderText(item.text)}
+        </div>`;
+      }
+      return html`<div style="margin: 8px 0; background: rgba(166,227,161,0.1); border-left: 2px solid #a6e3a1; padding: 8px; border-radius: 0 4px 4px 0; font-family: monospace; font-size: 0.85em; word-break: break-all;">
         <div style="color: #a6e3a1; font-weight: bold; margin-bottom: item.text ? '4px' : '0';">${item.name || 'tool_result'}</div>
         ${item.text ? html`<div style="opacity: 0.8; white-space: pre-wrap; max-height: 120px; overflow-y: auto;">${item.text}</div>` : ''}
       </div>`;
     }
-    return html`<pre style="font-size:0.85em; opacity:0.8;">${JSON.stringify(item, null, 2)}</pre>`;
+    return html`<pre style="font-size:0.85em; opacity:0.8; word-break: break-all;">${JSON.stringify(item, null, 2)}</pre>`;
   });
-}
-
-function renderLainChatItem(item: ChatItem | MessageGroup) {
-  function formatTime(ts: number) {
-    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-  if (item.kind === "reading-indicator") {
-    return html`<div class="lain-message lain-message--system" style="margin-bottom: 14px;">
-      <div class="lain-message__role">System</div>
-      <div class="lain-message__body" style="opacity: 0.7;">Thinking...</div>
-    </div>`;
-  }
-  if (item.kind === "stream") {
-    return html`<div class="lain-message lain-message--assistant" style="margin-bottom: 14px;">
-      <div class="lain-message__role" style="display: flex; justify-content: space-between;">
-        <span>${state.assistantName}</span>
-        <span style="opacity: 0.5;">${formatTime(item.startedAt)}</span>
-      </div>
-      <div class="lain-message__body" style="opacity: 0.8;">${item.text}<span class="cursor" style="display:inline-block;width:6px;height:14px;background:#cba6f7;margin-left:4px;vertical-align:text-bottom;animation:blink 1s step-end infinite;"></span></div>
-    </div>`;
-  }
-  if (item.kind === "group") {
-    return html`${item.messages.map(m => html`<div class="lain-message lain-message--${item.role}" style="margin-bottom: 14px;">
-      <div class="lain-message__role" style="display: flex; justify-content: space-between;">
-        <span>${item.role === 'assistant' ? state.assistantName : (item.role === 'user' ? 'Me' : 'System')}</span>
-        <span style="opacity: 0.5;">${formatTime(m.message.timestamp || item.timestamp)}</span>
-      </div>
-      <div class="lain-message__body">${renderMessageContent(m.message.content, m.message.text)}${item.isStreaming && m === item.messages[item.messages.length - 1] ? html`<span class="cursor" style="display:inline-block;width:6px;height:14px;background:#cba6f7;margin-left:4px;vertical-align:text-bottom;animation:blink 1s step-end infinite;"></span>` : ''}</div>
-    </div>`)}`;
-  }
-  return nothing;
-}
-
-function app() {
-  const contexts = buildContexts();
-  const current =
-    contexts.find((context) => context.id === state.currentContextId) ??
-    contexts[0] ??
-    ({
-      id: "main",
-      name: state.assistantName,
-      status: state.status,
-      pipeline: state.pipeline,
-      unread: false,
-      mood: "idle",
-      project: "none",
-      ambient: "",
-      quickActions: [],
-      draft: "",
-      attachments: [],
-      messages: [],
-      updatedAt: Date.now(),
-    } as any);
-
-  return html`
-    <div class="lain-shell mood-${current?.mood ?? "idle"}">
-      <header class="lain-topbar">
-        <div class="lain-topbar__left">
-          <div class="lain-dot"></div>
-          <div class="lain-titleblock">
-            <div class="lain-title">${state.assistantName}</div>
-            <div class="lain-subtitle">${state.error ?? state.status}</div>
-          </div>
-        </div>
-        <div class="lain-topbar__meta">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <select
-              class="lain-chip lain-chip-icon"
-              style="appearance: none; padding: 8px 28px 8px 14px; outline: none; font-size: inherit; background-image: url('data:image/svg+xml;utf8,<svg xmlns=\x22http://www.w3.org/2000/svg\x22 width=\x2212\x22 height=\x2212\x22 viewBox=\x220 0 24 24\x22 fill=\x22none\x22 stroke=\x22%23cdd6f4\x22 stroke-width=\x222\x22 stroke-linecap=\x22round\x22 stroke-linejoin=\x22round\x22><polyline points=\x226 9 12 15 18 9\x22/></svg>'); background-repeat: no-repeat; background-position: right 10px center;"
-              .value=${state.selectedModel ?? ""}
-              @change=${(e: Event) => {
-                state.selectedModel = (e.target as HTMLSelectElement).value;
-                rerender();
-              }}
-            >
-              ${state.models.map((m) => html`<option style="background-color: var(--bg-main); color: var(--text-main);" value=${m.id}>${m.name} (${m.provider})</option>`)}
-            </select>
-            <span class="pill">${current?.pipeline ?? state.pipeline}</span>
-            <div
-              class="lain-session-name"
-              title="Click to rename"
-              style="display:flex;align-items:center;gap:8px;"
-            >
-              ${
-                current?.nameEditing
-                  ? html`<input
-                        class="lain-session-name-input"
-                        .value=${current.nameDraft ?? current.name ?? ""}
-                        @input=${(e: Event) => {
-                          const v = (e.target as HTMLInputElement).value;
-                          const s = getCurrentSession();
-                          if (s) {
-                            s.nameDraft = v;
-                          }
-                        }}
-                        @keydown=${async (e: KeyboardEvent) => {
-                          const s = getCurrentSession();
-                          if (!s) {
-                            return;
-                          }
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            // optimistic update
-                            s.nameLoading = true;
-                            const prevLabel = s.row.label;
-                            s.row.label = s.nameDraft ?? s.row.label;
-                            rerender();
-                            try {
-                              await state.client?.request("sessions.patch", {
-                                key: s.row.key,
-                                label: s.nameDraft,
-                              });
-                              await loadSessionsList();
-                            } catch (err) {
-                              // revert on error
-                              s.row.label = prevLabel;
-                              state.error = String(err);
-                            } finally {
-                              s.nameLoading = false;
-                              s.nameEditing = false;
-                              rerender();
-                            }
-                          }
-                          if (e.key === "Escape") {
-                            s.nameEditing = false;
-                            s.nameDraft = s.row.label ?? s.row.subject ?? "";
-                            rerender();
-                          }
-                        }}
-                      />
-                      <button
-                        class="lain-chip ${current.nameLoading ? "lain-chip--loading" : ""}"
-                        @click=${async () => {
-                          const s = getCurrentSession();
-                          if (!s) {
-                            return;
-                          }
-                          s.nameLoading = true;
-                          // optimistic update
-                          const prevLabel = s.row.label;
-                          s.row.label = s.nameDraft ?? s.row.label;
-                          rerender();
-                          try {
-                            await state.client?.request("sessions.patch", {
-                              key: s.row.key,
-                              label: s.nameDraft,
-                            });
-                            await loadSessionsList();
-                          } catch (_e) {
-                            s.row.label = prevLabel;
-                            state.error = String(e);
-                          } finally {
-                            s.nameLoading = false;
-                            s.nameEditing = false;
-                            rerender();
-                          }
-                        }}
-                      >
-                        ${current.nameLoading ? "Saving..." : "Save"}
-                      </button>
-                      <button
-                        class="lain-chip lain-chip-icon"
-                        @click=${() => {
-                          const s = getCurrentSession();
-                          if (!s) {
-                            return;
-                          }
-                          s.nameEditing = false;
-                          s.nameDraft = s.row.label ?? s.row.subject ?? "";
-                          rerender();
-                        }}
-                      >
-                        Cancel
-                      </button>`
-                  : html`<strong>${current?.name ?? "(untitled)"}</strong>
-                      <button
-                        class="lain-chip lain-chip-icon"
-                        @click=${() => {
-                          const s = getCurrentSession();
-                          if (!s) {
-                            return;
-                          }
-                          s.nameEditing = true;
-                          s.nameDraft = s.row.label ?? s.row.subject ?? "";
-                          rerender();
-                        }}
-                      >
-                        ✎
-                      </button>
-                      <button
-                        class="lain-chip lain-chip-icon"
-                        @click=${() => void promptGenerateAndRename()}
-                      >
-                        ⚡
-                      </button>`
-              }
-            </div>
-            <button
-              class="lain-chip lain-chip-icon"
-              style="margin-left: -4px;"
-              title="Новая задача"
-              @click=${() => void createNewSession()}
-            >
-              +
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main
-        class="lain-main"
-        style="
-          --contexts-width: ${state.contextsCollapsed ? "44px" : "280px"};
-          --persona-width: 400px;
-        "
-      >
-        <aside class="lain-contexts ${state.contextsCollapsed ? "is-collapsed" : ""}">
-          <div
-            class="lain-section-label"
-            @click=${() => {
-              state.contextsCollapsed = !state.contextsCollapsed;
-              rerender();
-            }}
-          >
-            <span>contexts</span>
-            <span class="lain-section-toggle">${state.contextsCollapsed ? "»" : "«"}</span>
-          </div>
-          <div class="lain-context-list">
-            ${
-              contexts.length === 0
-                ? html`<div class="lain-empty">No live sessions yet.</div>`
-                : repeat(
-                    contexts,
-                    (context) => context.id,
-                    (context) => html`
-                      <button
-                        class="lain-context ${context.id === state.currentContextId
-                          ? "is-active"
-                          : ""}"
-                        @click=${() => void setCurrentContext(context.id)}
-                      >
-                        <div class="lain-context__row">
-                          <div class="lain-context__name">${context.name}</div>
-                          <div style="flex:1"></div>
-                          <div class="lain-context__actions" @click=${(e: Event) => e.stopPropagation()}>
-                            <div class="action-btn" title="В архив" @click=${() => void deleteSessionItem(context.id, false)}>📥</div>
-                            <div class="action-btn" title="Удалить" @click=${() => void deleteSessionItem(context.id, true)}>✖</div>
-                          </div>
-                          ${context.unread ? html`<span class="lain-context__ping"></span>` : ""}
-                        </div>
-                        <div class="lain-context__status">${context.status}</div>
-                        <div class="lain-context__pipeline">${context.pipeline}</div>
-                        <div class="lain-context__taskstatus">${context.taskStatus}</div>
-                      </button>
-                    `,
-                  )
-            }
-          </div>
-        </aside>
-
-        <section class="lain-stream">
-
-          <div class="lain-messages chat-thread">
-            <div class="chat-thread-inner">
-              ${repeat(
-                buildLainChatItems(current?.messages ?? []),
-                (item) => item.key,
-                (item) => renderLainChatItem(item),
-              )}
-              ${
-                getCurrentSession()?.toolStatus
-                  ? html`<div class="lain-tool-status" style="margin-top:12px;margin-bottom:12px;font-family:monospace;color:#cba6f7;font-size:0.85em;display:flex;align-items:center;gap:8px;opacity:0.8;">
-                           <div style="width:14px;height:14px;border:2px solid;border-color:#cba6f7 transparent #cba6f7 transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
-                           ${getCurrentSession()?.toolStatus}…
-                         </div>`
-                  : ""
-              }
-            </div>
-          </div>
-
-          <div class="agent-chat__input lain-composer-shell">
-            ${
-              (current?.attachments?.length ?? 0) > 0
-                ? html`<div class="chat-attachments-preview">
-                    ${current?.attachments?.map(
-                      (att) => html`<div class="chat-attachment-thumb">
-                        <img src=${att.dataUrl} alt="attachment" />
-                        <button
-                          class="chat-attachment-remove"
-                          @click=${() =>
-                            updateAttachments(
-                              (current?.attachments ?? []).filter((a) => a.id !== att.id),
-                            )}
-                        >
-                          ${icons.x}
-                        </button>
-                      </div>`,
-                    )}
-                  </div>`
-                : nothing
-            }
-
-            <input
-              type="file"
-              accept=${CHAT_ATTACHMENT_ACCEPT}
-              multiple
-              class="agent-chat__file-input"
-              @change=${(event: Event) => void handleFileSelect(event)}
-            />
-
-            ${
-              state.sttRecording && state.sttInterimText
-                ? html`<div class="agent-chat__stt-interim">${state.sttInterimText}</div>`
-                : nothing
-            }
-
-            <textarea
-              ${ref((el) => el && adjustTextareaHeight(el as HTMLTextAreaElement))}
-              class="lain-composer__textarea"
-              .value=${current?.draft ?? ""}
-              ?disabled=${!state.connected || !current}
-              @input=${(event: Event) => {
-                const target = event.target as HTMLTextAreaElement;
-                adjustTextareaHeight(target);
-                updateDraft(target.value);
-              }}
-              @keydown=${onComposerKeydown}
-              placeholder=${
-                state.sttRecording
-                  ? "Listening..."
-                  : "Give Lain a task, a project path, or a question..."
-              }
-              rows="1"
-            ></textarea>
-            <div class="agent-chat__toolbar lain-composer__footer">
-              <div class="agent-chat__toolbar-left">
-                <button
-                  class="agent-chat__input-btn"
-                  @click=${() => {
-                    document.querySelector<HTMLInputElement>(".agent-chat__file-input")?.click();
-                  }}
-                  ?disabled=${!state.connected}
-                >
-                  ${icons.paperclip}
-                </button>
-                ${
-                  isSttSupported()
-                    ? html`<button
-                        class="agent-chat__input-btn ${state.sttRecording
-                          ? "agent-chat__input-btn--recording"
-                          : ""}"
-                        @click=${() => {
-                          if (state.sttRecording) {
-                            stopStt();
-                            state.sttRecording = false;
-                            state.sttInterimText = "";
-                            rerender();
-                          } else {
-                            const started = startStt({
-                              onTranscript: (text, isFinal) => {
-                                if (isFinal) {
-                                  const currentDraft = getCurrentSession()?.draft ?? "";
-                                  const sep =
-                                    currentDraft && !currentDraft.endsWith(" ") ? " " : "";
-                                  updateDraft(currentDraft + sep + text);
-                                  state.sttInterimText = "";
-                                } else {
-                                  state.sttInterimText = text;
-                                }
-                                rerender();
-                              },
-                              onStart: () => {
-                                state.sttRecording = true;
-                                rerender();
-                              },
-                              onEnd: () => {
-                                state.sttRecording = false;
-                                state.sttInterimText = "";
-                                rerender();
-                              },
-                              onError: () => {
-                                state.sttRecording = false;
-                                state.sttInterimText = "";
-                                rerender();
-                              },
-                            });
-                            if (started) {
-                              state.sttRecording = true;
-                              rerender();
-                            }
-                          }
-                        }}
-                      >
-                        ${state.sttRecording ? icons.micOff : icons.mic}
-                      </button>`
-                    : nothing
-                }
-                <div class="lain-composer__hint">
-                  ${state.connected ? "Enter to send, Shift+Enter for newline" : "Gateway offline"}
-                </div>
-              </div>
-              <div class="agent-chat__toolbar-right">
-                <button
-                  class="chat-send-btn"
-                  ?disabled=${!state.connected || !current || state.sending}
-                  @click=${() => void submitComposer()}
-                >
-                  ${state.sending ? "Sending..." : "Send"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        
-
-        <aside class="lain-persona" style="position: relative; flex: 1; display: flex; flex-direction: column;">
-          <canvas id="lain-live2d-canvas" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; pointer-events: none; z-index: 1;"></canvas>
-          <div style="position: relative; z-index: 2; padding: 20px; flex: 1; display: flex; flex-direction: column; justify-content: flex-end; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%); pointer-events: none;">
-            <div class="lain-state" style="font-size: 0.8rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 2px;">${current?.mood ?? "idle"}</div>
-            <div class="lain-ambient" style="font-size: 0.9rem; max-width: 400px; margin-top: 8px; line-height: 1.4; color: #a0a0a0;">
-              ${current?.ambient ?? "Trying to listen to the house through the wires."}
-            </div>
-          </div>
-        </aside>
-      </main>
-    </div>
-  `;
-}
-
-function rerender() {
-  render(app(), document.body);
-  // After render, if any flow requested autoscroll, perform it once
-  requestAnimationFrame(() => {
-    if (state.autoScrollWanted) {
-      scrollChatToBottom(true);
-      state.autoScrollWanted = false;
-    }
-    // show title modal if requested
-    if (state.titleModalOpen) {
-      const modal = document.querySelector(".lain-title-modal") as HTMLElement | null;
-      if (modal) {
-        modal.focus();
-      }
-    }
-  });
-}
-
-async function deleteSessionItem(key: string, entirely: boolean) {
-  if (!state.client) {
-    return;
-  }
-  try {
-    if (entirely) {
-      await state.client.request("sessions.delete", { key, deleteTranscript: true });
-    } else {
-      await state.client.request("sessions.delete", { key });
-    }
-    await loadSessionsList();
-    if (state.currentContextId === key) {
-      const nextId = liveSessions.keys().next().value ?? "main";
-      state.currentContextId = nextId;
-      await setCurrentContext(nextId);
-    }
-  } catch (_e) {
-    state.error = String(e);
-    rerender();
-  }
-}
-
-async function createNewSession(label?: string, initialMessage?: string) {
-  if (!state.client || !state.connected) {
-    state.error = "Not connected to gateway";
-    rerender();
-    return;
-  }
-  state.error = null;
-  state.status = "Creating new session...";
-  rerender();
-  try {
-    const payload: Record<string, unknown> = { agentId: "lain-head" };
-    if (label) {
-      payload.label = label;
-    }
-    if (state.selectedModel) {
-      payload.model = state.selectedModel;
-    }
-    if (initialMessage) {
-      payload.initialMessage = initialMessage;
-    }
-    const res = await state.client.request("sessions.create", payload);
-    const key =
-      typeof (res as any)?.key === "string"
-        ? (res as any).key
-        : typeof (res as any)?.sessionKey === "string"
-          ? (res as any).sessionKey
-          : null;
-    if (key) {
-      await loadSessionsList();
-      await setCurrentContext(key);
-      state.status = "Session created";
-    } else {
-      state.error = "Failed to create session";
-      state.status = "Failed to create session";
-    }
-  } catch (err) {
-    state.error = String(err);
-    state.status = "Failed to create session";
-  } finally {
-    rerender();
-  }
 }
 
 async function _promptRenameCurrent() {
