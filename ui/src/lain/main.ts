@@ -32,7 +32,6 @@ type Role = "assistant" | "system" | "user" | "tool";
 type ChatMessage = {
   id?: string;
   timestamp?: number;
-  timestamp?: number;
   role: Role;
   text: string;
   content?: any[];
@@ -46,7 +45,6 @@ type ContextItem = {
   pipeline: string;
   taskStatus: string;
   unread: boolean;
-  isStreaming?: boolean;
   isStreaming?: boolean;
   mood: Mood;
   project: string;
@@ -68,6 +66,7 @@ type SessionState = {
   attachments: ChatAttachment[];
   unread: boolean;
   toolStatus: string | null;
+  isStreaming?: boolean;
   // UI rename state
   nameEditing?: boolean;
   nameDraft?: string;
@@ -408,7 +407,7 @@ async function submitComposer(prefill?: string) {
   session.messages = [...session.messages, { role: "user", text, timestamp: Date.now() }];
   session.draft = "";
   // Force clearing the DOM textarea here
-  const textarea = document.querySelector(".lain-composer__textarea");
+  const textarea = document.querySelector(".lain-composer__textarea") as HTMLTextAreaElement;
   if (textarea) {textarea.value = "";}
   state.sending = true;
   state.error = null;
@@ -834,7 +833,7 @@ function buildLainChatItems(messages: ChatMessage[]): Array<ChatItem | MessageGr
 }
 
 
-function renderMessageContent(contentArray, fallbackText) {
+function renderMessageContent(contentArray: any[] | undefined, fallbackText: string) {
   if (!contentArray || !Array.isArray(contentArray) || contentArray.length === 0) {
     return html`<div style="white-space: pre-wrap;">${fallbackText}</div>`;
   }
@@ -843,7 +842,7 @@ function renderMessageContent(contentArray, fallbackText) {
       // Ignore empty texts from pending assistant
       if (!item.text || item.text === " ") {return html`${item.text}`;}
       const text = item.text;
-      const pipelineMatch = text.match(/(.*?)(?:~~~|\`\`\`)json[\s\S]*?pipeline[\s\S]*?\n([\s\S]*?(?:{[\s\S]*?"pipeline"|pipelineId)[\s\S]*?)(?:~~~|\`\`\`)(.*)/is);
+      const pipelineMatch = text.match(/(.*?)(?:~~~|```)json[\s\S]*?pipeline[\s\S]*?\n([\s\S]*?(?:{[\s\S]*?"pipeline"|pipelineId)[\s\S]*?)(?:~~~|```)(.*)/is);
       if (pipelineMatch) {
          const before = pipelineMatch[1] || "";
          const pipelineContent = pipelineMatch[2] || "{}";
@@ -859,7 +858,7 @@ function renderMessageContent(contentArray, fallbackText) {
                Pipeline Configuration Proposed
             </div>
             <pre style="font-size: 0.85em; opacity: 0.8; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word;">${JSON.stringify(pipelineData.pipeline, null, 2)}</pre>
-            <button class="lain-btn-primary" @click=${(e) => {
+            <button class="lain-btn-primary" @click=${(e: Event) => {
                 e.preventDefault();
                 window.setTimeout(() => {
                   submitComposer('Выполняй этот пайплайн, пожалуйста.');
@@ -915,7 +914,7 @@ function renderLainChatItem(item: ChatItem | MessageGroup) {
     </div>`;
   }
   if (item.kind === "group") {
-    return html`${item.messages.map(m => html`<div class="lain-message lain-message--${item.role}" style="margin-bottom: 14px;">
+    return html`${item.messages.map((m: any) => html`<div class="lain-message lain-message--${item.role}" style="margin-bottom: 14px;">
       <div class="lain-message__role" style="display: flex; justify-content: space-between;">
         <span>${item.role === 'assistant' ? state.assistantName : (item.role === 'user' ? 'Me' : 'System')}</span>
         <span style="opacity: 0.5;">${formatTime(m.message.timestamp || item.timestamp)}</span>
@@ -1043,7 +1042,7 @@ function app() {
                             await loadSessionsList();
                           } catch (_e) {
                             s.row.label = prevLabel;
-                            state.error = String(e);
+                            state.error = String(_e);
                           } finally {
                             s.nameLoading = false;
                             s.nameEditing = false;
@@ -1358,7 +1357,7 @@ async function deleteSessionItem(key: string, entirely: boolean) {
       await setCurrentContext(nextId);
     }
   } catch (_e) {
-    state.error = String(e);
+    state.error = String(_e);
     rerender();
   }
 }
@@ -1420,7 +1419,7 @@ async function _promptRenameCurrent() {
     await loadSessionsList();
     await setCurrentContext(current.row.key);
   } catch (_e) {
-    state.error = String(e);
+    state.error = String(_e);
     rerender();
   }
 }
@@ -1662,7 +1661,7 @@ async function applyGeneratedTitle(title: string) {
     await setCurrentContext(s.row.key);
     closeTitleModal();
   } catch (_e) {
-    state.error = String(e);
+    state.error = String(_e);
     rerender();
   } finally {
     s.nameLoading = false;

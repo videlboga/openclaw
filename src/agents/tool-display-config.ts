@@ -476,6 +476,11 @@ export const TOOL_DISPLAY_CONFIG: ToolDisplayConfig = {
       title: "Web Search",
       detailKeys: ["query", "count"],
     },
+    pipeline_execute: {
+      emoji: "⚙️",
+      title: "Pipeline Execute",
+      detailKeys: ["pipelineId"],
+    },
     web_fetch: {
       emoji: "📄",
       title: "Web Fetch",

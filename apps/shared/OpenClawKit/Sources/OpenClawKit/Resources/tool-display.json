@@ -719,6 +719,13 @@
         "count"
       ]
     },
+    "pipeline_execute": {
+      "emoji": "⚙️",
+      "title": "Pipeline Execute",
+      "detailKeys": [
+        "pipelineId"
+      ]
+    },
     "web_fetch": {
       "emoji": "📄",
       "title": "Web Fetch",
