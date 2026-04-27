@@ -10,11 +10,6 @@ import {
   CHAT_ATTACHMENT_ACCEPT,
   isSupportedChatAttachmentMimeType,
 } from "../ui/chat/attachment-support.ts";
-import {
-  renderMessageGroup,
-  renderReadingIndicatorGroup,
-  renderStreamingGroup,
-} from "../ui/chat/grouped-render.ts";
 import { normalizeMessage, normalizeRoleForGrouping } from "../ui/chat/message-normalizer.ts";
 import { isSttSupported, startStt, stopStt } from "../ui/chat/speech.ts";
 import { loadControlUiBootstrapConfig } from "../ui/controllers/control-ui-bootstrap.ts";
@@ -602,15 +597,19 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
 
   if (runState === "delta") {
     session.isStreaming = true;
-    session.isStreaming = true;
     const toolStatus = extractToolStatus(payload?.message);
     if (toolStatus) {
       session.toolStatus = toolStatus;
-      rerender();
-      return;
+    } else {
+      session.toolStatus = null;
     }
+    
+    // We do NOT return early here because we want to update the text progressively
+    // even if a tool is currently active according to extractToolStatus
+    
     const nextMessage = normalizedMessageToChatMessage(payload?.message);
     if (!nextMessage) {
+      rerender();
       return;
     }
     session.toolStatus = null;
@@ -636,7 +635,6 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
 
   if (runState === "final" || runState === "aborted") {
     session.isStreaming = false;
-    session.isStreaming = false;
     session.toolStatus = null;
     const nextMessage = normalizedMessageToChatMessage(payload?.message);
     let appended = false;
@@ -661,7 +659,6 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
   }
 
   if (runState === "error") {
-    session.isStreaming = false;
     session.isStreaming = false;
     session.toolStatus = null;
     const errorMessage =
@@ -844,7 +841,7 @@ function renderMessageContent(contentArray, fallbackText) {
   return contentArray.map(item => {
     if (item.type === 'text') {
       // Ignore empty texts from pending assistant
-      if (!item.text || item.text === " ") return html`${item.text}`;
+      if (!item.text || item.text === " ") {return html`${item.text}`;}
       const text = item.text;
       const pipelineMatch = text.match(/(.*?)(~~~|```)json\s*\n\s*\{\s*"pipeline":([\s\S]*?)(~~~|```)(.*)/is);
       if (pipelineMatch) {
