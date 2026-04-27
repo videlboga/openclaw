@@ -410,8 +410,13 @@ async function submitComposer(prefill?: string) {
   }
   session.messages = [...session.messages, { role: "user", text, timestamp: Date.now() }];
   session.draft = "";
+  // Force clearing the DOM textarea here
+  const textarea = document.querySelector(".lain-composer__textarea");
+  if (textarea) {textarea.value = "";}
   state.sending = true;
   state.error = null;
+  // While we wait for the gateway to respond, assume we're streaming/loading.
+  session.isStreaming = true; 
   rerender();
   try {
     await state.client.request("chat.send", {
@@ -807,7 +812,26 @@ function buildLainChatItems(messages: ChatMessage[]): Array<ChatItem | MessageGr
   timestamp: typeof (msg as any).timestamp === "number" ? (msg as any).timestamp : Date.now() + index,
     },
   }));
-  return groupMessages(items);
+  const grouped = groupMessages(items);
+  const session = getCurrentSession();
+  if (session && session.isStreaming && grouped.length > 0) {
+    const last = grouped[grouped.length - 1];
+    if (last.kind === "group" && last.role === "assistant") {
+      last.isStreaming = true;
+    } else if (last.kind === "group" && last.role === "user") {
+        // If the last message is from the user, we want to append an empty assistant group that is streaming
+        grouped.push({
+            kind: "group",
+            key: "group:assistant:pending",
+            role: "assistant",
+            senderLabel: null,
+            messages: [{ message: { role: "assistant", text: " ", content: [] }, key: "pending" }],
+            timestamp: Date.now(),
+            isStreaming: true
+        });
+    }
+  }
+  return grouped;
 }
 
 function renderLainChatItem(item: ChatItem | MessageGroup) {
