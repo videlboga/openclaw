@@ -23,6 +23,7 @@ import { normalizeInputProvenance, type InputProvenance } from "../../sessions/i
 import { resolveSendPolicy } from "../../sessions/send-policy.js";
 import { parseAgentSessionKey } from "../../sessions/session-key-utils.js";
 import { emitSessionTranscriptUpdate } from "../../sessions/transcript-events.js";
+import { getAgentRunContext } from "../../infra/agent-events.js";
 import { resolveAssistantMessagePhase } from "../../shared/chat-message-content.js";
 import {
   normalizeLowercaseStringOrEmpty,
@@ -943,6 +944,17 @@ function appendAssistantTranscriptMessage(params: {
   if (!transcriptPath) {
     return { ok: false, error: "transcript path not resolved" };
   }
+
+  // If the sessionId provided is actually a transient runId associated with
+  // a run that is hidden from Control UI (noSessionPersistence), skip writing
+  // to avoid leaking assistant output. Return success so callers treat this as
+  // a no-op append rather than an error.
+  try {
+    const runCtx = getAgentRunContext(params.sessionId);
+    if (runCtx && runCtx.isControlUiVisible === false) {
+      return { ok: true };
+    }
+  } catch {}
 
   if (!fs.existsSync(transcriptPath)) {
     if (!params.createIfMissing) {

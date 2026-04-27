@@ -686,6 +686,7 @@ export function createAgentEventHandler({
     seq: number,
     text: string,
     delta?: unknown,
+    messageTs?: number,
   ) => {
     const cleanedText = stripInlineDirectiveTagsForDisplay(text).text;
     const cleanedDelta =
@@ -721,7 +722,9 @@ export function createAgentEventHandler({
     if (shouldHideHeartbeatChatOutput(clientRunId, sourceRunId)) {
       return;
     }
-    const now = Date.now();
+  // Use wall-clock now for throttling behavior, but prefer messageTs for
+  // the timestamp included in the emitted chat payload when available.
+  const now = Date.now();
     const last = chatRunState.deltaSentAt.get(clientRunId) ?? 0;
     if (now - last < 150) {
       return;
@@ -736,9 +739,16 @@ export function createAgentEventHandler({
       message: {
         role: "assistant",
         content: [{ type: "text", text: mergedText }],
-        timestamp: now,
+        timestamp: typeof messageTs === "number" ? messageTs : now,
       },
     };
+    // Do not emit chat deltas for runs that are intentionally hidden from the
+    // Control UI (noSessionPersistence). This double-checks run visibility to
+    // avoid leaking assistant output through broadcast or session messages.
+    const deltaRunCtx = getAgentRunContext(clientRunId);
+    if (deltaRunCtx?.isControlUiVisible === false) {
+      return;
+    }
     broadcast("chat", payload, { dropIfSlow: true });
     nodeSendToSession(sessionKey, "chat", payload);
   };
@@ -763,6 +773,7 @@ export function createAgentEventHandler({
     clientRunId: string,
     sourceRunId: string,
     seq: number,
+    messageTs?: number,
   ) => {
     const { text, shouldSuppressSilent } = resolveBufferedChatTextState(clientRunId, sourceRunId);
     const shouldSuppressSilentLeadFragment = isSuppressedControlReplyLeadFragment(text);
@@ -793,7 +804,7 @@ export function createAgentEventHandler({
       message: {
         role: "assistant",
         content: [{ type: "text", text }],
-        timestamp: now,
+        timestamp: typeof messageTs === "number" ? messageTs : now,
       },
     };
     broadcast("chat", flushPayload, { dropIfSlow: true });
@@ -811,6 +822,7 @@ export function createAgentEventHandler({
     error?: unknown,
     stopReason?: string,
     errorKind?: ErrorKind,
+    messageTs?: number,
   ) => {
     const { text, shouldSuppressSilent } = resolveBufferedChatTextState(clientRunId, sourceRunId);
     // Flush any throttled delta so streaming clients receive the complete text
@@ -834,10 +846,14 @@ export function createAgentEventHandler({
             ? {
                 role: "assistant",
                 content: [{ type: "text", text }],
-                timestamp: Date.now(),
+                timestamp: typeof messageTs === "number" ? messageTs : Date.now(),
               }
             : undefined,
       };
+      const finalRunCtx = getAgentRunContext(clientRunId);
+      if (finalRunCtx?.isControlUiVisible === false) {
+        return;
+      }
       broadcast("chat", payload);
       nodeSendToSession(sessionKey, "chat", payload);
       return;
@@ -966,7 +982,14 @@ export function createAgentEventHandler({
       if (itemPhase === "start" && isControlUiVisible && sessionKey && !isAborted) {
         flushBufferedChatDeltaIfNeeded(sessionKey, clientRunId, evt.runId, evt.seq);
       }
-      broadcast("agent", agentPayload);
+      // Only broadcast global agent events to connected WS clients when the
+      // run context is visible to control UI. Background/hidden runs (for
+      // example transient title-generation runs) set isControlUiVisible=false
+      // and must not leak their assistant/tool events onto the global agent
+      // channel which some clients map into chat UI.
+      if (isControlUiVisible) {
+        broadcast("agent", agentPayload);
+      }
     }
 
     if (isControlUiVisible && sessionKey) {
@@ -980,7 +1003,15 @@ export function createAgentEventHandler({
         );
       }
       if (!isAborted && evt.stream === "assistant" && typeof evt.data?.text === "string") {
-        emitChatDelta(sessionKey, clientRunId, evt.runId, evt.seq, evt.data.text, evt.data.delta);
+        emitChatDelta(
+          sessionKey,
+          clientRunId,
+          evt.runId,
+          evt.seq,
+          evt.data.text,
+          evt.data.delta,
+          typeof evt.ts === "number" ? evt.ts : undefined,
+        );
       }
     }
 

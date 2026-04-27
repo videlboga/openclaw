@@ -10,9 +10,9 @@ const TARGET_HTTP_PORT = Number(
   process.env.OPENCLAW_PROXY_HTTP_PORT || process.env.OPENCLAW_PROXY_TARGET_PORT || 18789,
 );
 // Gateway WebSocket port (control plane)
-// Allow overriding separately via OPENCLAW_PROXY_WS_PORT, otherwise fall back to target port
+// Force 18789 for WS unless strictly overridden, avoiding HTTP_PORT bleeding
 const TARGET_WS_PORT = Number(
-  process.env.OPENCLAW_PROXY_WS_PORT || process.env.OPENCLAW_PROXY_TARGET_PORT || TARGET_HTTP_PORT,
+  process.env.OPENCLAW_PROXY_TARGET_WS_PORT || 18789,
 );
 
 // Optional override via env for testing: OPENCLAW_PROXY_TOKEN
@@ -35,6 +35,7 @@ function readTokenFromConfig() {
       cfg?.gateway?.auth?.token ||
       cfg?.gatewayToken ||
       cfg?.auth?.gateway?.token ||
+      cfg?.auth?.token ||
       null
     );
   } catch (err) {
@@ -54,6 +55,46 @@ const server = http.createServer((req, res) => {
   if (req.method === "OPTIONS") {
     res.writeHead(204, corsHeaders);
     res.end();
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/api/pipeline/run") {
+    let body = "";
+    req.on("data", chunk => body += chunk);
+    req.on("end", () => {
+      try {
+        const config = JSON.parse(body);
+        const tmpFile = path.join(os.tmpdir(), `pipeline-${Date.now()}.json`);
+        fs.writeFileSync(tmpFile, JSON.stringify(config));
+
+        res.writeHead(200, {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive"
+        });
+
+        const { spawn } = require("child_process");
+        const cp = spawn("npx", ["tsx", "src/agents/pipeline-orchestrator.ts", tmpFile]);
+
+        cp.stdout.on("data", (data) => {
+          res.write(`data: ${JSON.stringify({ chunk: data.toString() })}\n\n`);
+        });
+
+        cp.stderr.on("data", (data) => {
+          res.write(`data: ${JSON.stringify({ error: data.toString() })}\n\n`);
+        });
+
+        cp.on("close", (code) => {
+          res.write(`data: ${JSON.stringify({ done: true, code })}\n\n`);
+          res.end();
+          try { fs.unlinkSync(tmpFile); } catch (e) {}
+        });
+      } catch (err) {
+        res.writeHead(400, corsHeaders);
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
     return;
   }
 
@@ -101,7 +142,7 @@ const server = http.createServer((req, res) => {
           if (status === 200 && contentType.includes("text/html")) {
             let body = Buffer.concat(chunks).toString("utf8");
             const safeToken = encodeURIComponent(token);
-            const inject = `<script>try{if(!location.hash.includes('token=')){history.replaceState(null,'',location.pathname+'#token=${safeToken}');}}catch(e){}</script>`;
+            const inject = `<script>try{if(!location.hash.includes('token=')){const newUrl = new URL(location.href); newUrl.hash = '#token=${safeToken}'; history.replaceState(null,'',newUrl.href);}}catch(e){}</script>`;
             if (body.includes("</head>")) {
               body = body.replace("</head>", inject + "</head>");
             } else {
@@ -174,9 +215,16 @@ server.on("upgrade", (req, socket, head) => {
     headers["origin"] = `http://${TARGET_HOST}:${TARGET_WS_PORT}`;
   }
 
+  const isVite = req.headers["sec-websocket-protocol"] === "vite-hmr";
+  
+  if (isVite) {
+    if (headers["origin"]) {
+      headers["origin"] = `http://${TARGET_HOST}:${TARGET_HTTP_PORT}`;
+    }
+  }
   const options = {
     hostname: TARGET_HOST,
-    port: TARGET_WS_PORT,
+    port: isVite ? TARGET_HTTP_PORT : TARGET_WS_PORT,
     path: req.url,
     method: "GET",
     headers,

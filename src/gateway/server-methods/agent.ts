@@ -319,6 +319,7 @@ export const agentHandlers: GatewayRequestHandlers = {
       bestEffortDeliver?: boolean;
       label?: string;
       inputProvenance?: InputProvenance;
+      noSessionPersistence?: boolean;
     };
     const senderIsOwner = resolveSenderIsOwnerFromClient(client);
     const allowModelOverride = resolveAllowModelOverrideFromClient(client);
@@ -646,16 +647,22 @@ export const agentHandlers: GatewayRequestHandlers = {
         });
         sessionEntry = persisted;
       }
+      // If this run is intended to be transient (noSessionPersistence), avoid
+      // creating a chatRun entry which would map the run into chat client IDs.
+      // Still register an agent run context but mark it hidden from control UI
+      // so assistant/events are not mirrored into chat surfaces.
       if (canonicalSessionKey === mainSessionKey || canonicalSessionKey === "global") {
-        context.addChatRun(idem, {
-          sessionKey: canonicalSessionKey,
-          clientRunId: idem,
-        });
-        if (requestedBestEffortDeliver === undefined) {
-          bestEffortDeliver = true;
+        if (!request.noSessionPersistence) {
+          context.addChatRun(idem, {
+            sessionKey: canonicalSessionKey,
+            clientRunId: idem,
+          });
+          if (requestedBestEffortDeliver === undefined) {
+            bestEffortDeliver = true;
+          }
         }
       }
-      registerAgentRunContext(idem, { sessionKey: canonicalSessionKey });
+      registerAgentRunContext(idem, { sessionKey: canonicalSessionKey, isControlUiVisible: !request.noSessionPersistence });
     }
 
     const runId = idem;
@@ -855,6 +862,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         bootstrapContextMode: request.bootstrapContextMode,
         bootstrapContextRunKind: request.bootstrapContextRunKind,
         internalEvents: request.internalEvents,
+  noSessionPersistence: request.noSessionPersistence,
         inputProvenance,
         // Internal-only: allow workspace override for spawned subagent runs.
         workspaceDir: resolveIngressWorkspaceOverrideForSpawnedRun({

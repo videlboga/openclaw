@@ -526,6 +526,13 @@ async function resolveAutoEntries(params: {
   if (activeEntry) {
     return [activeEntry];
   }
+  // Prefer configured provider/key entries before falling back to local CLI
+  // audio binaries. This makes behavior deterministic in test environments
+  // where local binaries (whisper, sherpa) might be present on PATH.
+  const keys = await resolveKeyEntry(params);
+  if (keys) {
+    return [keys];
+  }
   if (params.capability === "audio") {
     const localAudio = await resolveLocalAudioEntry();
     if (localAudio) {
@@ -541,10 +548,6 @@ async function resolveAutoEntries(params: {
   const gemini = await resolveGeminiCliEntry(params.capability);
   if (gemini) {
     return [gemini];
-  }
-  const keys = await resolveKeyEntry(params);
-  if (keys) {
-    return [keys];
   }
   return [];
 }

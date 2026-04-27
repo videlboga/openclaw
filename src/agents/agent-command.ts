@@ -395,8 +395,12 @@ async function agentCommandInternal(
 
     if (acpResolution?.kind === "ready" && sessionKey) {
       const startedAt = Date.now();
+      // Register run context so internal listeners can correlate events.
+      // For non-persistent background runs, mark as not visible to control UI
+      // so assistant events are not mirrored into chat surfaces.
       registerAgentRunContext(runId, {
         sessionKey,
+        ...(opts.noSessionPersistence ? { isControlUiVisible: false } : {}),
       });
       emitAcpLifecycleStart({ runId, startedAt });
 
@@ -465,18 +469,21 @@ async function agentCommandInternal(
       const finalTextRaw = visibleTextAccumulator.finalizeRaw();
       const finalText = visibleTextAccumulator.finalize();
       try {
-        sessionEntry = await persistAcpTurnTranscript({
-          body,
-          finalText: finalTextRaw,
-          sessionId,
-          sessionKey,
-          sessionEntry,
-          sessionStore,
-          storePath,
-          sessionAgentId,
-          threadId: opts.threadId,
-          sessionCwd: resolveAcpSessionCwd(acpResolution.meta) ?? workspaceDir,
-        });
+        if (!opts.noSessionPersistence) {
+          sessionEntry = await persistAcpTurnTranscript({
+            body,
+            finalText: finalTextRaw,
+            sessionId,
+            sessionKey,
+            sessionEntry,
+            sessionStore,
+            storePath,
+            sessionAgentId,
+            threadId: opts.threadId,
+            sessionCwd: resolveAcpSessionCwd(acpResolution.meta) ?? workspaceDir,
+            now: Date.now(),
+          });
+        }
       } catch (error) {
         log.warn(
           `ACP transcript persistence failed for ${sessionKey}: ${formatErrorMessage(error)}`,
@@ -508,9 +515,12 @@ async function agentCommandInternal(
       verboseOverride ?? persistedVerbose ?? (agentCfg?.verboseDefault as VerboseLevel | undefined);
 
     if (sessionKey) {
+      // Always register a run context; when runs are marked as noSessionPersistence
+      // they should not be visible to control UI clients so we set isControlUiVisible:false.
       registerAgentRunContext(runId, {
         sessionKey,
         verboseLevel: resolvedVerboseLevel,
+        ...(opts.noSessionPersistence ? { isControlUiVisible: false } : {}),
       });
     }
 
@@ -570,12 +580,14 @@ async function agentCommandInternal(
         next.thinkingLevel = thinkOverride;
       }
       applyVerboseOverride(next, verboseOverride);
-      await persistSessionEntry({
-        sessionStore,
-        sessionKey,
-        storePath,
-        entry: next,
-      });
+      if (!opts.noSessionPersistence) {
+        await persistSessionEntry({
+          sessionStore,
+          sessionKey,
+          storePath,
+          entry: next,
+        });
+      }
       sessionEntry = next;
     }
 
@@ -638,12 +650,14 @@ async function agentCommandInternal(
             selection: { provider: defaultProvider, model: defaultModel, isDefault: true },
           });
           if (updated) {
-            await persistSessionEntry({
-              sessionStore,
-              sessionKey,
-              storePath,
-              entry,
-            });
+            if (!opts.noSessionPersistence) {
+              await persistSessionEntry({
+                sessionStore,
+                sessionKey,
+                storePath,
+                entry,
+              });
+            }
           }
         }
       }
@@ -724,16 +738,18 @@ async function agentCommandInternal(
         throw new Error(`Thinking level "xhigh" is only supported for ${formatXHighModelHint()}.`);
       }
       resolvedThinkLevel = "high";
-      if (sessionEntry && sessionStore && sessionKey && sessionEntry.thinkingLevel === "xhigh") {
+        if (sessionEntry && sessionStore && sessionKey && sessionEntry.thinkingLevel === "xhigh") {
         const entry = sessionEntry;
         entry.thinkingLevel = "high";
         entry.updatedAt = Date.now();
-        await persistSessionEntry({
-          sessionStore,
-          sessionKey,
-          storePath,
-          entry,
-        });
+        if (!opts.noSessionPersistence) {
+          await persistSessionEntry({
+            sessionStore,
+            sessionKey,
+            storePath,
+            entry,
+          });
+        }
       }
     }
     let sessionFile: string | undefined;
@@ -949,7 +965,7 @@ async function agentCommandInternal(
     }
 
     // Update token+model fields in the session store.
-    if (sessionStore && sessionKey) {
+    if (sessionStore && sessionKey && !opts.noSessionPersistence) {
       await updateSessionStoreAfterAgentRun({
         cfg,
         contextTokensOverride: agentCfg?.contextTokens,

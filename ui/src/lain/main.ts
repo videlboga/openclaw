@@ -1093,11 +1093,6 @@ function app() {
         </aside>
 
         <section class="lain-stream">
-          ${
-            getCurrentSession()?.toolStatus
-              ? html`<div class="lain-tool-status">${getCurrentSession()?.toolStatus}…</div>`
-              : ""
-          }
 
           <div class="lain-messages chat-thread">
             <div class="chat-thread-inner">
@@ -1106,6 +1101,14 @@ function app() {
                 (item) => item.key,
                 (item) => renderLainChatItem(item),
               )}
+              ${
+                getCurrentSession()?.toolStatus
+                  ? html`<div class="lain-tool-status" style="margin-top:12px;margin-bottom:12px;font-family:monospace;color:#cba6f7;font-size:0.85em;display:flex;align-items:center;gap:8px;opacity:0.8;">
+                           <div style="width:14px;height:14px;border:2px solid;border-color:#cba6f7 transparent #cba6f7 transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
+                           ${getCurrentSession()?.toolStatus}…
+                         </div>`
+                  : ""
+              }
             </div>
           </div>
 

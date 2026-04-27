@@ -108,6 +108,8 @@ export const AgentParamsSchema = Type.Object(
     bootstrapContextRunKind: Type.Optional(
       Type.Union([Type.Literal("default"), Type.Literal("heartbeat"), Type.Literal("cron")]),
     ),
+    /** When true, do not persist the run transcript or update session store. */
+    noSessionPersistence: Type.Optional(Type.Boolean()),
     internalEvents: Type.Optional(Type.Array(AgentInternalEventSchema)),
     inputProvenance: Type.Optional(InputProvenanceSchema),
     idempotencyKey: NonEmptyString,

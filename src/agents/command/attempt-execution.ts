@@ -269,6 +269,9 @@ export async function persistAcpTurnTranscript(params: {
   sessionAgentId: string;
   threadId?: string | number;
   sessionCwd: string;
+  /** Optional base timestamp to use for appended messages. When multiple messages are appended
+   * they will be assigned unique timestamps by adding a small increment. */
+  now?: number;
 }): Promise<SessionEntry | undefined> {
   const promptText = params.body;
   const replyText = params.finalText;
@@ -298,12 +301,18 @@ export async function persistAcpTurnTranscript(params: {
     cwd: params.sessionCwd,
   });
 
+  // Use provided base timestamp when available; if multiple messages are appended
+  // in quick succession, increment by 1 ms to ensure unique timestamps and stable ordering
+  // in the UI (some clients group/display per-timestamp).
+  const baseTs = typeof params.now === "number" ? params.now : Date.now();
+  let nextTs = baseTs;
   if (promptText) {
     sessionManager.appendMessage({
       role: "user",
       content: promptText,
-      timestamp: Date.now(),
+      timestamp: nextTs,
     });
+    nextTs += 1;
   }
 
   if (replyText) {
@@ -315,8 +324,9 @@ export async function persistAcpTurnTranscript(params: {
       model: "acp-runtime",
       usage: ACP_TRANSCRIPT_USAGE,
       stopReason: "stop",
-      timestamp: Date.now(),
+      timestamp: nextTs,
     });
+    nextTs += 1;
   }
 
   emitSessionTranscriptUpdate(sessionFile);

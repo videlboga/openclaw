@@ -90,6 +90,8 @@ export type AgentCommandOpts = {
   workspaceDir?: SpawnedRunMetadata["workspaceDir"];
   /** Force bundled MCP teardown when a one-shot local run completes. */
   cleanupBundleMcpOnRunEnd?: boolean;
+  /** When true, do not persist the run transcript or update session store. */
+  noSessionPersistence?: boolean;
 };
 
 export type AgentCommandIngressOpts = Omit<

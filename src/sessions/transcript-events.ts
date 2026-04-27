@@ -1,4 +1,7 @@
 import { normalizeOptionalString } from "../shared/string-coerce.js";
+import { createSubsystemLogger } from "../logging/subsystem.js";
+
+const log = createSubsystemLogger("sessions/transcript-events");
 
 export type SessionTranscriptUpdate = {
   sessionFile: string;
@@ -42,6 +45,16 @@ export function emitSessionTranscriptUpdate(update: string | SessionTranscriptUp
       ? { messageId: normalizeOptionalString(normalized.messageId) }
       : {}),
   };
+  try {
+    // Log minimal info to help trace unexpected transcript updates.
+    const msg = nextUpdate.message as any;
+    const abortRunId = msg?.openclawAbort?.runId ?? undefined;
+    log.debug(
+      `emitSessionTranscriptUpdate sessionKey=${nextUpdate.sessionKey ?? "-"} messageId=${nextUpdate.messageId ?? "-"} abortRunId=${abortRunId ?? "-"}`,
+    );
+  } catch {
+    /* ignore logging failures */
+  }
   for (const listener of SESSION_TRANSCRIPT_LISTENERS) {
     try {
       listener(nextUpdate);

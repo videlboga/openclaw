@@ -662,3 +662,25 @@ textarea {
 .lain-portrait {
   display: none !important;
 }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.lain-tool-status {
+  font-family: monospace;
+  color: #cba6f7;
+  font-size: 0.9em;
+  padding: 8px 16px;
+  background: rgba(203, 166, 247, 0.1);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  align-self: flex-start;
+  margin-left: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

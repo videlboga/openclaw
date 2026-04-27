@@ -1,6 +1,10 @@
 import { SessionManager } from "@mariozechner/pi-coding-agent";
 import { formatErrorMessage } from "../../infra/errors.js";
 import { emitSessionTranscriptUpdate } from "../../sessions/transcript-events.js";
+import { getAgentRunContext } from "../../infra/agent-events.js";
+import { createSubsystemLogger } from "../../logging/subsystem.js";
+
+const log = createSubsystemLogger("gateway/chat-transcript-inject");
 
 type AppendMessageArg = Parameters<SessionManager["appendMessage"]>[0];
 
@@ -100,10 +104,32 @@ export function appendInjectedAssistantMessageToTranscript(params: {
   };
 
   try {
+    // If this append is associated with a run that is intentionally hidden from
+    // Control UI (e.g. transient title-generation runs with noSessionPersistence),
+    // skip persisting/broadcasting to avoid leaking assistant content into session
+    // transcripts. Treat as a no-op success so callers that rely on idempotency
+    // semantics continue to work.
+    const abortRunId = params.abortMeta?.runId;
+    if (typeof abortRunId === "string") {
+      try {
+        const runCtx = getAgentRunContext(abortRunId);
+        if (runCtx && runCtx.isControlUiVisible === false) {
+          try {
+            log.debug(`skipping transcript append for hidden run ${abortRunId}`);
+          } catch {}
+          return { ok: true };
+        }
+      } catch {}
+    }
     // IMPORTANT: Use SessionManager so the entry is attached to the current leaf via parentId.
     // Raw jsonl appends break the parent chain and can hide compaction summaries from context.
     const sessionManager = SessionManager.open(params.transcriptPath);
     const messageId = sessionManager.appendMessage(messageBody);
+    try {
+      log.debug(
+        `appendInjectedAssistantMessageToTranscript path=${params.transcriptPath} idempotencyKey=${params.idempotencyKey ?? "-"} abortRunId=${params.abortMeta?.runId ?? "-"} messageId=${messageId}`,
+      );
+    } catch {}
     emitSessionTranscriptUpdate({
       sessionFile: params.transcriptPath,
       message: messageBody,
