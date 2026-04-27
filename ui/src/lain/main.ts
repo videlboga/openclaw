@@ -34,6 +34,8 @@ type Role = "assistant" | "system" | "user" | "tool";
 
 type ChatMessage = {
   id?: string;
+  timestamp?: number;
+  timestamp?: number;
   role: Role;
   text: string;
   content?: any[];
@@ -47,6 +49,8 @@ type ContextItem = {
   pipeline: string;
   taskStatus: string;
   unread: boolean;
+  isStreaming?: boolean;
+  isStreaming?: boolean;
   mood: Mood;
   project: string;
   ambient: string;
@@ -198,14 +202,14 @@ function normalizedMessageToChatMessage(message: unknown): ChatMessage | null {
   const content = normalized.content;
 
   if (role === "tool") {
-    return { id: normalized.id, role: role as Role, text, content };
+    return { id: normalized.id, role: role as Role, text, content, timestamp: normalized.timestamp };
   }
 
   if (role === "assistant" || role === "system" || role === "user") {
-    return { id: normalized.id, role: role as Role, text, content };
+    return { id: normalized.id, role: role as Role, text, content, timestamp: normalized.timestamp };
   }
 
-  return { id: normalized.id, role: "system", text, content };
+  return { id: normalized.id, role: "system", text, content, timestamp: normalized.timestamp };
 }
 
 function summarizePipeline(row: GatewaySessionRow): string {
@@ -404,7 +408,7 @@ async function submitComposer(prefill?: string) {
   if (!text) {
     return;
   }
-  session.messages = [...session.messages, { role: "user", text }];
+  session.messages = [...session.messages, { role: "user", text, timestamp: Date.now() }];
   session.draft = "";
   state.sending = true;
   state.error = null;
@@ -590,6 +594,8 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
   }
 
   if (runState === "delta") {
+    session.isStreaming = true;
+    session.isStreaming = true;
     const toolStatus = extractToolStatus(payload?.message);
     if (toolStatus) {
       session.toolStatus = toolStatus;
@@ -622,6 +628,8 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
   }
 
   if (runState === "final" || runState === "aborted") {
+    session.isStreaming = false;
+    session.isStreaming = false;
     session.toolStatus = null;
     const nextMessage = normalizedMessageToChatMessage(payload?.message);
     let appended = false;
@@ -646,6 +654,8 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
   }
 
   if (runState === "error") {
+    session.isStreaming = false;
+    session.isStreaming = false;
     session.toolStatus = null;
     const errorMessage =
       typeof payload?.errorMessage === "string" ? payload.errorMessage : "chat error";
@@ -801,21 +811,32 @@ function buildLainChatItems(messages: ChatMessage[]): Array<ChatItem | MessageGr
 }
 
 function renderLainChatItem(item: ChatItem | MessageGroup) {
+  function formatTime(ts: number) {
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
   if (item.kind === "reading-indicator") {
-    return renderReadingIndicatorGroup(undefined, "");
+    return html`<div class="lain-message lain-message--system" style="margin-bottom: 14px;">
+      <div class="lain-message__role">System</div>
+      <div class="lain-message__body" style="opacity: 0.7;">Thinking...</div>
+    </div>`;
   }
   if (item.kind === "stream") {
-    return renderStreamingGroup(item.text, item.startedAt, undefined, undefined, "");
+    return html`<div class="lain-message lain-message--assistant" style="margin-bottom: 14px;">
+      <div class="lain-message__role" style="display: flex; justify-content: space-between;">
+        <span>${state.assistantName}</span>
+        <span style="opacity: 0.5;">${formatTime(item.startedAt)}</span>
+      </div>
+      <div class="lain-message__body" style="opacity: 0.8;">${item.text}<span class="cursor" style="display:inline-block;width:6px;height:14px;background:#cba6f7;margin-left:4px;vertical-align:text-bottom;animation:blink 1s step-end infinite;"></span></div>
+    </div>`;
   }
   if (item.kind === "group") {
-    return renderMessageGroup(item, {
-      showReasoning: false,
-      showToolCalls: true,
-      assistantName: state.assistantName,
-      assistantAvatar: state.assistantAvatar,
-      basePath: "",
-      contextWindow: null,
-    });
+    return html`${item.messages.map(m => html`<div class="lain-message lain-message--${item.role}" style="margin-bottom: 14px;">
+      <div class="lain-message__role" style="display: flex; justify-content: space-between;">
+        <span>${item.role === 'assistant' ? state.assistantName : (item.role === 'user' ? 'Me' : 'System')}</span>
+        <span style="opacity: 0.5;">${formatTime(m.message.timestamp || item.timestamp)}</span>
+      </div>
+      <div class="lain-message__body">${m.message.text || JSON.stringify(m.message.content)}${item.isStreaming && m === item.messages[item.messages.length - 1] ? html`<span class="cursor" style="display:inline-block;width:6px;height:14px;background:#cba6f7;margin-left:4px;vertical-align:text-bottom;animation:blink 1s step-end infinite;"></span>` : ''}</div>
+    </div>`)}`;
   }
   return nothing;
 }
@@ -1564,7 +1585,7 @@ async function applyGeneratedTitle(title: string) {
 async function init() {
   rerender();
   await loadControlUiBootstrapConfig({
-    basePath: "",
+    basePath: "/", // fixed 404 control-ui-config
     assistantName: state.assistantName,
     assistantAvatar: state.assistantAvatar,
     assistantAgentId: null,
