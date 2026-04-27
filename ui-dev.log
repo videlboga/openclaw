@@ -78,3 +78,11 @@ Error: Port 5175 is already in use
 11:55:38 [vite] (client) page reload src/lain/main.ts
 11:58:02 [vite] (client) page reload src/lain/main.ts
 11:58:52 [vite] (client) page reload src/lain/main.ts
+12:21:14 [vite] (client) [optimizer] bundling dependencies...
+12:21:16 [vite] (client) ✨ new dependencies optimized: lit-html/directives/unsafe-html.js
+12:21:16 [vite] (client) ✨ optimized dependencies changed. reloading
+12:21:48 [vite] (client) page reload src/lain/main.ts
+12:22:17 [vite] (client) page reload src/lain/main.ts
+12:22:28 [vite] (client) page reload src/lain/main.ts
+12:22:36 [vite] (client) page reload src/lain/main.ts
+12:22:57 [vite] (client) page reload src/lain/main.ts

@@ -843,11 +843,11 @@ function renderMessageContent(contentArray, fallbackText) {
       // Ignore empty texts from pending assistant
       if (!item.text || item.text === " ") {return html`${item.text}`;}
       const text = item.text;
-      const pipelineMatch = text.match(/(.*?)(~~~|```)json\s*\n\s*\{\s*"pipeline":([\s\S]*?)(~~~|```)(.*)/is);
+      const pipelineMatch = text.match(/(.*?)(?:~~~|\`\`\`)json[\s\S]*?pipeline[\s\S]*?\n([\s\S]*?(?:{[\s\S]*?"pipeline"|pipelineId)[\s\S]*?)(?:~~~|\`\`\`)(.*)/is);
       if (pipelineMatch) {
          const before = pipelineMatch[1] || "";
-         const pipelineContent = pipelineMatch[3] || "{}";
-         const after = pipelineMatch[5] || "";
+         const pipelineContent = pipelineMatch[2] || "{}";
+         const after = pipelineMatch[3] || "" || "" || "";
          let pipelineData;
          try {
            pipelineData = JSON.parse(`{"pipeline":${pipelineContent}`);
