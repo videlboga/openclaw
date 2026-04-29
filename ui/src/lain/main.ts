@@ -748,6 +748,11 @@ function connect(attemptIndex = 0) {
       state.error = null;
       rerender();
 
+      try {
+        // eslint-disable-next-line no-console
+        console.info("openclaw:onHello", { hello });
+      } catch {}
+
       void loadModels(client).then((models) => {
         state.models = models;
         if (!state.selectedModel && models.length > 0) {

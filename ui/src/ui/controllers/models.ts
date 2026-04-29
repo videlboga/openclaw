@@ -15,7 +15,7 @@ export async function loadModels(client: GatewayBrowserClient): Promise<ModelCat
     // diagnose why the UI only shows a single model in the picker.
     try {
       // eslint-disable-next-line no-console
-      console.debug("openclaw:models.raw", result?.models ?? []);
+      console.info("openclaw:models.raw", result?.models ?? []);
     } catch {}
 
     // Best-effort: hide Copilot providers from the UI model list so users
@@ -24,7 +24,7 @@ export async function loadModels(client: GatewayBrowserClient): Promise<ModelCat
     const filtered = models.filter((m) => m.provider !== "github-copilot" && m.provider !== "copilot-proxy");
     try {
       // eslint-disable-next-line no-console
-      console.debug("openclaw:models.filtered.count", filtered.length);
+      console.info("openclaw:models.filtered.count", filtered.length);
     } catch {}
     return filtered;
   } catch {
