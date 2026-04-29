@@ -58,6 +58,15 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Lightweight endpoint the UI can call to retrieve the gateway token from
+  // the local proxy if sessionStorage-based injection fails for any reason.
+  if (req.method === "GET" && req.url === "/__openclaw/token") {
+    const tokenBody = JSON.stringify({ token: readTokenFromConfig() || "" });
+    res.writeHead(200, { ...corsHeaders, "Content-Type": "application/json", "Content-Length": Buffer.byteLength(tokenBody) });
+    res.end(tokenBody);
+    return;
+  }
+
   if (req.method === "POST" && req.url === "/api/pipeline/run") {
     let body = "";
     req.on("data", chunk => body += chunk);
@@ -116,10 +125,11 @@ const server = http.createServer((req, res) => {
   const accept = (req.headers.accept || "").toString();
   const cookieHeader = (req.headers.cookie || "").toString();
   const redirectedCookie = cookieHeader.includes("__openclaw_proxy_redirected=1");
+  const urlLooksLikeHtml = typeof req.url === "string" && (req.url.endsWith(".html") || req.url === "/" || req.url === "" );
   if (
     token &&
     (req.method === "GET" || req.method === "HEAD") &&
-    accept.includes("text/html") &&
+    (accept.includes("text/html") || urlLooksLikeHtml) &&
     !redirectedCookie
   ) {
     // Fetch the HTML from the target, inject a small script that sets the
@@ -142,7 +152,43 @@ const server = http.createServer((req, res) => {
           if (status === 200 && contentType.includes("text/html")) {
             let body = Buffer.concat(chunks).toString("utf8");
             const safeToken = encodeURIComponent(token);
-            const inject = `<script>try{if(!location.hash.includes('token=')){const newUrl = new URL(location.href); newUrl.hash = '#token=${safeToken}'; history.replaceState(null,'',newUrl.href);}}catch(e){}</script>`;
+            // Inject a small script that stores the gateway token into sessionStorage
+            // under the control-ui token keys and exposes it on window.__openclaw.gatewayToken.
+            // This avoids relying on URL fragments and matches the Control UI's token lookup
+            // behavior (sessionStorage keys like `openclaw.control.token.v1:<scope>`).
+            const inject = `<script>try{(function(){
+              const applyToken = (t) => {
+                try{
+                  const candidates = [
+                    'ws://127.0.0.1:19004',
+                    'ws://localhost:19004',
+                    (location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host,
+                    'ws://${TARGET_HOST}:${TARGET_WS_PORT}',
+                    'ws://${TARGET_HOST}:${TARGET_HTTP_PORT}',
+                    'ws://127.0.0.1:${TARGET_WS_PORT}',
+                    'ws://localhost:${TARGET_WS_PORT}',
+                    'wss://127.0.0.1:${TARGET_WS_PORT}',
+                    'wss://localhost:${TARGET_WS_PORT}'
+                  ];
+                  const prefix = 'openclaw.control.token.v1:';
+                  for (const c of candidates) {
+                    try { sessionStorage.setItem(prefix + c, t); } catch (e) {}
+                  }
+                  window.__openclaw = window.__openclaw || {};
+                  window.__openclaw.gatewayToken = t;
+                } catch (e) {}
+              };
+              // First, apply known token immediately (best-effort).
+              try{ applyToken(decodeURIComponent('${safeToken}')); }catch(e){}
+              // As a robust fallback, fetch the token from the proxy endpoint
+              // if the immediate injection didn't reach the right storage scope.
+              try{
+                fetch('/__openclaw/token', { credentials: 'same-origin' })
+                  .then(r => r.json())
+                  .then(j => { if (j && j.token) applyToken(j.token); })
+                  .catch(()=>{});
+              }catch(e){}
+            })()}catch(e){}</script>`;
             if (body.includes("</head>")) {
               body = body.replace("</head>", inject + "</head>");
             } else {

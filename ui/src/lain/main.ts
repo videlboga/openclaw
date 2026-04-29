@@ -91,6 +91,8 @@ if (settingsHost.pendingGatewayUrl) {
 if (settingsHost.pendingGatewayToken) {
   settings.token = settingsHost.pendingGatewayToken;
 }
+
+// ...existing code...
 if (settingsHost.sessionKey) {
   settings.sessionKey = settingsHost.sessionKey;
   settings.lastActiveSessionKey = settingsHost.sessionKey;
@@ -147,6 +149,28 @@ const state = {
   models: [] as ModelCatalogEntry[],
   selectedModel: null as string | null,
 };
+
+// If a local proxy exposes a token endpoint, prefer connecting the UI through
+// the proxy so the proxy can add Authorization headers during the WS upgrade.
+(async function preferLocalProxyIfAvailable() {
+  try {
+    const resp = await fetch('/__openclaw/token', { credentials: 'same-origin' });
+    if (!resp.ok) {return;}
+    const body = await resp.json().catch(() => null);
+    if (!body || !body.token) {return;}
+    // Use ws/wss depending on page protocol and preserve host:port (proxy origin).
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const proxyGateway = `${proto}//${location.host}`;
+    // Only override if the current settings.gatewayUrl doesn't already point at the proxy
+    if (!settings.gatewayUrl || !settings.gatewayUrl.includes(location.host)) {
+      settings.gatewayUrl = proxyGateway;
+      // update derived candidates to include the new gateway
+      state.gatewayCandidates = deriveGatewayCandidates(settings.gatewayUrl);
+    }
+  } catch (e) {
+    // best-effort — if fetch fails, leave settings as-is
+  }
+})();
 
 function extractToolStatus(message: unknown): string | null {
   const normalized = normalizeMessage(message);
@@ -671,6 +695,39 @@ function handleGatewayEvent(evt: GatewayEventFrame) {
 }
 
 function connect(attemptIndex = 0) {
+  // Before attempting to connect, give the local proxy a short window to
+  // provide a token endpoint. This removes the race where the UI attaches
+  // before the proxy has injected or exposed the gateway token.
+  async function waitForProxyToken(timeoutMs = 600) {
+    try {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), timeoutMs);
+      const resp = await fetch('/__openclaw/token', { signal: controller.signal, credentials: 'same-origin' });
+      clearTimeout(t);
+      if (!resp.ok) {return null;}
+      const body = await resp.json().catch(() => null);
+      if (!body || !body.token) {return null;}
+      return body.token;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Try to get proxy token (best-effort, non-blocking beyond timeout)
+  void (async () => {
+    const tok = await waitForProxyToken(600);
+    if (tok) {
+      settings.token = tok;
+      // prefer proxy origin for gatewayUrl
+      try {
+        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const proxyGateway = `${proto}//${location.host}`;
+        settings.gatewayUrl = proxyGateway;
+        state.gatewayCandidates = deriveGatewayCandidates(settings.gatewayUrl);
+      } catch {}
+    }
+  })();
+
   state.client?.stop();
   const url =
     state.gatewayCandidates[attemptIndex] ?? state.gatewayCandidates[0] ?? settings.gatewayUrl;
@@ -694,7 +751,18 @@ function connect(attemptIndex = 0) {
       void loadModels(client).then((models) => {
         state.models = models;
         if (!state.selectedModel && models.length > 0) {
-          state.selectedModel = models[0].id;
+          // Prefer DeepSeek/OpenRouter when available so the UI defaults to
+          // the user's configured provider/model instead of an arbitrary
+          // first catalog entry.
+          const preferred = models.find(
+            (m) => m.id === "deepseek/deepseek-v4-pro" || m.id === "openrouter/deepseek/deepseek-v4-pro"
+          );
+          if (preferred) {
+            state.selectedModel = preferred.id;
+          } else {
+            const byProvider = models.find((m) => (m.provider ?? "").toLowerCase() === "openrouter");
+            state.selectedModel = byProvider?.id ?? models[0].id;
+          }
         }
         rerender();
       });
