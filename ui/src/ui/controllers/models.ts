@@ -21,6 +21,18 @@ export async function loadModels(client: GatewayBrowserClient): Promise<ModelCat
     // Best-effort: hide Copilot providers from the UI model list so users
     // don't see GitHub Copilot / copilot-proxy choices in the picker.
     const models = result?.models ?? [];
+    try {
+      const ids = models.map((m) => m.id).slice(0, 50);
+      const providerCounts: Record<string, number> = {};
+      for (const m of models) {
+        const p = (m.provider ?? "").toLowerCase();
+        providerCounts[p] = (providerCounts[p] || 0) + 1;
+      }
+      // eslint-disable-next-line no-console
+      console.info("openclaw:models.ids", ids);
+      // eslint-disable-next-line no-console
+      console.info("openclaw:models.providerCounts", providerCounts);
+    } catch {}
     const filtered = models.filter((m) => m.provider !== "github-copilot" && m.provider !== "copilot-proxy");
     try {
       // eslint-disable-next-line no-console
