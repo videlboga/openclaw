@@ -1,0 +1,18 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "小静.moc3",
+		"Textures": [
+			"小静.4096/texture_00.png"
+		],
+		"Physics": "小静.physics3.json",
+		"DisplayInfo": "小静.cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		}
+	]
+}

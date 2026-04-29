@@ -1,0 +1,22 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "ChatGPT Image 14 апр.moc3",
+		"Textures": [
+			"ChatGPT Image 14 апр.4096/texture_00.png"
+		],
+		"DisplayInfo": "ChatGPT Image 14 апр.cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		}
+	]
+}

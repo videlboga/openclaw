@@ -1,0 +1,26 @@
+{
+    "compilerOptions": {
+        "outDir": "build",
+        "noImplicitAny": false,
+        "moduleResolution": "node",
+        "target": "es2017",
+        "module": "commonjs",
+        "lib": ["esnext", "dom"],
+        "allowJs": true,
+        "allowSyntheticDefaultImports": true,
+        "jsx": "react",
+        "esModuleInterop": true,
+        "strict": true,
+        "strictNullChecks": false,
+        "declaration": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true,
+        "noEmit": false
+    },
+    "exclude": [
+        "node_modules",
+        "dist",
+        "demo",
+        "build"
+    ]
+}

@@ -1128,7 +1128,7 @@ export function formatAssistantErrorText(
     return "LLM request failed with an unknown error.";
   }
 
-  const providerRuntimeFailureKind = classifyProviderRuntimeFailureKind({
+  console.error("LOG_BOMB_RAW_ERROR:", raw); const providerRuntimeFailureKind = classifyProviderRuntimeFailureKind({
     status: extractLeadingHttpStatus(raw)?.code,
     message: raw,
     provider: opts?.provider ?? msg.provider,

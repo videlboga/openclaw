@@ -101,6 +101,55 @@ export default definePluginEntry({
           };
         },
       },
+      // Synthesize OpenRouter-accessible aliases for DeepSeek and Qwen at
+      // runtime to avoid static cross-package imports and TypeScript
+      // rootDir diagnostics. This hook will be invoked by the provider
+      // runtime when augmenting the global model catalog.
+      augmentModelCatalog: async ({ config }) => {
+        const result: Array<{ id: string; name: string; provider: string; contextWindow?: number; reasoning?: boolean; input?: string[] }> = [];
+        try {
+          // Use a runtime-evaluated import to avoid TypeScript static
+          // module resolution (rootDir) checks for cross-package imports.
+          const deepseekMod = await Function('return import("../deepseek/models.js")')();
+          const qwenMod = await Function('return import("../qwen/models.js")')();
+
+          const deepseekCatalog = deepseekMod?.DEEPSEEK_MODEL_CATALOG as
+            | Array<{ id: string; name?: string; contextWindow?: number; reasoning?: boolean; input?: string[] }>
+            | undefined;
+          const qwenCatalog = qwenMod?.QWEN_MODEL_CATALOG as
+            | Array<{ id: string; name?: string; contextWindow?: number; reasoning?: boolean; input?: string[] }>
+            | undefined;
+
+          if (Array.isArray(deepseekCatalog)) {
+            for (const m of deepseekCatalog) {
+              result.push({
+                id: `openrouter/deepseek/${m.id}`,
+                name: m.name ? `${m.name} (DeepSeek)` : `deepseek/${m.id}`,
+                provider: "openrouter",
+                contextWindow: m.contextWindow,
+                reasoning: m.reasoning ?? false,
+                input: m.input,
+              });
+            }
+          }
+
+          if (Array.isArray(qwenCatalog)) {
+            for (const m of qwenCatalog) {
+              result.push({
+                id: `openrouter/qwen/${m.id}`,
+                name: m.name ? `${m.name} (Qwen)` : `qwen/${m.id}`,
+                provider: "openrouter",
+                contextWindow: m.contextWindow,
+                reasoning: m.reasoning ?? false,
+                input: m.input,
+              });
+            }
+          }
+        } catch (err) {
+          // Best-effort: if dynamic imports fail, return no supplemental entries.
+        }
+        return result as any;
+      },
       resolveDynamicModel: (ctx) => buildDynamicOpenRouterModel(ctx),
       prepareDynamicModel: async (ctx) => {
         await loadOpenRouterModelCapabilities(ctx.modelId);

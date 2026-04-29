@@ -30,7 +30,10 @@ export const modelsHandlers: GatewayRequestHandlers = {
         catalog,
         defaultProvider: DEFAULT_PROVIDER,
       });
-      const models = allowedCatalog.length > 0 ? allowedCatalog : catalog;
+      // Server-side guard: never return Copilot provider rows in models.list.
+      const sanitize = (rows: typeof catalog) =>
+        rows.filter((r) => (r.provider ?? "").toLowerCase() !== "copilot-proxy" && (r.provider ?? "").toLowerCase() !== "github-copilot");
+      const models = sanitize(allowedCatalog.length > 0 ? allowedCatalog : catalog);
       respond(true, { models }, undefined);
     } catch (err) {
       respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, String(err)));

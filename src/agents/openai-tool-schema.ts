@@ -160,6 +160,7 @@ export function resolveOpenAIStrictToolSetting(
   model: OpenAIStrictToolModel,
   options?: { transport?: OpenAITransportKind; supportsStrictMode?: boolean },
 ): boolean | undefined {
+  if (model.provider === "github-copilot") {return false;}
   if (resolvesToNativeOpenAIStrictTools(model, options?.transport ?? "stream")) {
     return true;
   }

@@ -1,0 +1,4 @@
+[submodule "framework"]
+	path = framework
+	url = https://github.com/Live2D/CubismWebFramework.git
+	branch = develop

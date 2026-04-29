@@ -1,0 +1,136 @@
+nohup: ввод игнорируется
+OpenClaw proxy listening on http://127.0.0.1:19004/ -> http://127.0.0.1:18789, ws://127.0.0.1:18789/
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied upgrade -> 127.0.0.1:18789 (101)
+[openclaw-proxy] GET /lain.html - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request /ws - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request /ws - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request /ws - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request /ws - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied upgrade -> 127.0.0.1:18789 (101)
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: read ECONNRESET
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied upgrade -> 127.0.0.1:18789 (101)
+[openclaw-proxy] GET /lain.html - token=ce7943ef...1adc96d4
+[openclaw-proxy] injected token script into HTML response
+[openclaw-proxy] GET /assets/lain-DLoyC_sT.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/i18n-dDA0KhV7.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /assets/lain-DLoyC_sT.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /assets/lain-Cfs_fD6w.css - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/agents-utils-BAE_nLbw.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/control-ui-bootstrap-CYCWjSp6.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /assets/lain-Cfs_fD6w.css -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /assets/format-BSwNFRMQ.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/string-coerce-BCQOv2bD.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /assets/format-BSwNFRMQ.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/i18n-dDA0KhV7.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /assets/open-external-url-CydbvoFV.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /assets/agents-utils-BAE_nLbw.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/control-ui-bootstrap-CYCWjSp6.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/open-external-url-CydbvoFV.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/string-coerce-BCQOv2bD.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /assets/icons-Cj_5Jm0l.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/directive-CFvwNlV_.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/navigation-BO22i-x_.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/config-form.shared-tWTVVBy1.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /assets/icons-Cj_5Jm0l.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/directive-CFvwNlV_.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/navigation-BO22i-x_.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/config-form.shared-tWTVVBy1.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /__openclaw/control-ui-config.json - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /__openclaw/control-ui-config.json -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /favicon.ico - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /favicon.ico -> 127.0.0.1:18789 (200)
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request /ws - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request /ws - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: read ECONNRESET
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied upgrade -> 127.0.0.1:18789 (101)
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied upgrade -> 127.0.0.1:18789 (101)
+[openclaw-proxy] GET /lain.html - token=ce7943ef...1adc96d4
+[openclaw-proxy] injected token script into HTML response
+[openclaw-proxy] GET /assets/lain-DLoyC_sT.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/i18n-dDA0KhV7.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/lain-Cfs_fD6w.css - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/directive-CFvwNlV_.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /assets/lain-DLoyC_sT.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /assets/format-BSwNFRMQ.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/string-coerce-BCQOv2bD.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /assets/format-BSwNFRMQ.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/i18n-dDA0KhV7.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/lain-Cfs_fD6w.css -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/directive-CFvwNlV_.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/string-coerce-BCQOv2bD.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /assets/agents-utils-BAE_nLbw.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/open-external-url-CydbvoFV.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/icons-Cj_5Jm0l.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/navigation-BO22i-x_.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/config-form.shared-tWTVVBy1.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] GET /assets/control-ui-bootstrap-CYCWjSp6.js - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /assets/agents-utils-BAE_nLbw.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/open-external-url-CydbvoFV.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/icons-Cj_5Jm0l.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/navigation-BO22i-x_.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/config-form.shared-tWTVVBy1.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] proxied HTTP GET /assets/control-ui-bootstrap-CYCWjSp6.js -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /__openclaw/control-ui-config.json - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /__openclaw/control-ui-config.json -> 127.0.0.1:18789 (200)
+[openclaw-proxy] GET /favicon.ico - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied HTTP GET /favicon.ico -> 127.0.0.1:18789 (200)
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request /ws - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied upgrade -> 127.0.0.1:18789 (101)
+[openclaw-proxy] upgrade request /ws - token=ce7943ef...1adc96d4
+[openclaw-proxy] proxied upgrade -> 127.0.0.1:18789 (101)
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4
+[openclaw-proxy] upgrade request error: connect ECONNREFUSED 127.0.0.1:18789
+[openclaw-proxy] upgrade request / - token=ce7943ef...1adc96d4

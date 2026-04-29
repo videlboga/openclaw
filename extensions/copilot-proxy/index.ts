@@ -4,6 +4,11 @@ import {
   type ProviderAuthResult,
 } from "./runtime-api.js";
 
+// Runtime opt-out: set DISABLE_COPILOT_PROXY=1 to prevent this plugin from
+// registering at all. Useful for local deployments where the Copilot proxy
+// must remain disabled even if configuration contains copilot-proxy entries.
+const DISABLE_COPILOT_PROXY = process.env.DISABLE_COPILOT_PROXY === "1";
+
 const DEFAULT_BASE_URL = "http://localhost:3000/v1";
 const DEFAULT_API_KEY = "n/a";
 const DEFAULT_CONTEXT_WINDOW = 128_000;
@@ -70,6 +75,10 @@ export default definePluginEntry({
   name: "Copilot Proxy",
   description: "Local Copilot Proxy (VS Code LM) provider plugin",
   register(api) {
+    if (DISABLE_COPILOT_PROXY) {
+      // Skip registering anything when explicitly disabled.
+      return;
+    }
     api.registerProvider({
       id: "copilot-proxy",
       label: "Copilot Proxy",

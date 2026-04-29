@@ -1,8 +1,9 @@
-const { readFileSync, writeFileSync } = require("fs");
-const file = "extensions/github-copilot/stream.ts";
-let code = readFileSync(file, "utf8");
-code = code.replace(
-  "(payload: Record<string, any>) => {",
-  '(payload: Record<string, any>) => {\n          require("fs").writeFileSync("/tmp/debug_copilot_payload.json", JSON.stringify(payload, null, 2));',
-);
-writeFileSync(file, code);
+const fs = require('fs');
+const file = 'src/agents/openai-transport-stream.ts';
+let code = fs.readFileSync(file, 'utf-8');
+
+code = code.replace(/let params = build/g, 'let paramsToLog: any;\n        let params = build');
+code = code.replace(/const responseStream =/g, 'paramsToLog = params;\n        const responseStream =');
+code = code.replace(/catch \(error\) \{/g, 'catch (error) {\n        console.error("RAW_PARAMS_ON_ERROR:", JSON.stringify(paramsToLog || {}, null, 2));');
+
+fs.writeFileSync(file, code);

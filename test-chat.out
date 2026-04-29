@@ -1,0 +1,2 @@
+msg: {"type":"event","event":"connect.challenge","payload":{"nonce":"5212959a-4604-4c83-a238-8e8292c58801","ts":1777218406512}}
+close: 1008

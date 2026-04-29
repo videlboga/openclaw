@@ -1,0 +1,13 @@
+{
+  "pipelineId": "test-pipe-1",
+  "workspaceDir": "/tmp",
+  "initialMessage": "Ping system test",
+  "agents": [
+    {
+      "id": "orchestrator",
+      "model": "github-copilot/gpt-5-mini",
+      "systemPrompt": "You are a test agent. Say 'Pong' and nothing else.",
+      "order": 1
+    }
+  ]
+}

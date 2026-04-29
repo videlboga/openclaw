@@ -18,9 +18,12 @@ export async function loadModels(client: GatewayBrowserClient): Promise<ModelCat
       console.info("openclaw:models.raw", result?.models ?? []);
     } catch {}
 
-    // Best-effort: hide Copilot providers from the UI model list so users
-    // don't see GitHub Copilot / copilot-proxy choices in the picker.
-    const models = result?.models ?? [];
+  // Best-effort: hide Copilot providers from the UI model list so users
+  // don't see GitHub Copilot / copilot-proxy choices in the picker.
+  // However, be permissive for OpenRouter/DeepSeek/Qwen models (they may
+  // sometimes appear with unexpected provider labels) by allowing entries
+  // whose provider or id indicates these providers.
+  const models = result?.models ?? [];
     try {
       const ids = models.map((m) => m.id).slice(0, 50);
       const providerCounts: Record<string, number> = {};
@@ -33,7 +36,59 @@ export async function loadModels(client: GatewayBrowserClient): Promise<ModelCat
       // eslint-disable-next-line no-console
       console.info("openclaw:models.providerCounts", providerCounts);
     } catch {}
-    const filtered = models.filter((m) => m.provider !== "github-copilot" && m.provider !== "copilot-proxy");
+    const allowedProviderSet = new Set(["openrouter", "deepseek", "qwen"]);
+    // Known model id prefixes we consider "normal" models even when their
+    // provider was labeled/copied under a proxy like `copilot-proxy`.
+    const allowedIdPrefixes = [
+      "gpt-",
+      "claude-",
+      "gemini-",
+      "grok-",
+      "openrouter/",
+      "deepseek-",
+      "qwen",
+      "glm-",
+      "kimi-",
+    ];
+
+    const excludedDebug: { id: string; provider: string; reason: string }[] = [];
+
+    const filtered = models.filter((m) => {
+      const provider = (m.provider ?? "").toLowerCase();
+      const id = (m.id ?? "").toLowerCase();
+      // Always hide explicit GitHub Copilot provider
+      if (provider === "github-copilot") {
+        excludedDebug.push({ id: m.id ?? "", provider: m.provider ?? "", reason: "github-copilot" });
+        return false;
+      }
+      // Explicitly exclude the Copilot proxy provider entirely. The proxy
+      // module is not wanted in our deployment and we should not surface its
+      // mirrored model list in the UI even when it contains mainstream ids.
+      if (provider === "copilot-proxy") {
+        excludedDebug.push({ id: m.id ?? "", provider: m.provider ?? "", reason: "copilot-proxy disabled" });
+        return false;
+      }
+      // Allow if provider is explicitly one of our desired providers
+      if (allowedProviderSet.has(provider)) {
+        return true;
+      }
+      // Allow if id is namespaced with one of the desired prefixes
+      for (const p of allowedIdPrefixes) {
+        if (id.startsWith(p)) {
+          return true;
+        }
+      }
+      // Fallback: accept entries that don't look like a Copilot/github provider
+      if (provider.includes("copilot") || provider.includes("github")) {
+        excludedDebug.push({ id: m.id ?? "", provider: m.provider ?? "", reason: "provider looks like copilot/github" });
+        return false;
+      }
+      return true;
+    });
+    try {
+      // eslint-disable-next-line no-console
+      if (excludedDebug.length > 0) console.info("openclaw:models.excluded", excludedDebug);
+    } catch {}
     try {
       // eslint-disable-next-line no-console
       console.info("openclaw:models.filtered.count", filtered.length);

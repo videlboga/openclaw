@@ -19,16 +19,34 @@ openclaw onboard --auth-choice openrouter-api-key
 
 ## Config snippet
 
+Note: do NOT commit real API keys to the repository. Use environment variables
+or your deployment secret store. Example only:
+
 ```json5
 {
   env: { OPENROUTER_API_KEY: "sk-or-..." },
   agents: {
     defaults: {
-      model: { primary: "openrouter/auto" },
+      // example default set to DeepSeek v4 Pro
+      model: { primary: "deepseek/deepseek-v4-pro" },
     },
   },
 }
 ```
+
+## Local quick set
+
+To set your OpenRouter API key locally without committing it to the repo, run one of the following on your machine (replace the example key with your real key):
+
+```bash
+# export for current shell/session
+export OPENROUTER_API_KEY="sk-or-REPLACE_WITH_YOUR_KEY"
+
+# or save to your local OpenClaw env (~/.openclaw/.env)
+mkdir -p "$HOME/.openclaw" && printf '%s\n' "OPENROUTER_API_KEY=sk-or-REPLACE_WITH_YOUR_KEY" > "$HOME/.openclaw/.env"
+```
+
+OpenClaw will prefer a process env variable first, then `./.env`, and finally `~/.openclaw/.env`.
 
 ## Notes
 

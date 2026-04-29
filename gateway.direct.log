@@ -1,0 +1,64 @@
+nohup: ввод игнорируется
+[openclaw] Building TypeScript (dist is stale: dirty_watched_tree - dirty watched source tree).
+[90m2026-04-28T16:26:03.415+03:00[39m [36m[gateway][39m [36mloading configuration…[39m
+[90m2026-04-28T16:26:03.608+03:00[39m [36m[gateway][39m [36mforce: no listeners on port 18789[39m
+[90m2026-04-28T16:26:03.613+03:00[39m [36m[gateway][39m [36mresolving authentication…[39m
+[90m2026-04-28T16:26:03.693+03:00[39m [36m[gateway][39m [36mstarting...[39m
+[90m2026-04-28T16:26:05.230+03:00[39m [36m[gateway][39m [36mstarting HTTP server...[39m
+[90m2026-04-28T16:26:05.233+03:00[39m [35m[canvas][39m [36mhost mounted at http://127.0.0.1:18789/__openclaw__/canvas/ (root /home/cyberkitty/.openclaw/canvas)[39m
+[90m2026-04-28T16:26:05.238+03:00[39m [36m[gateway][39m [36mMCP loopback server listening on http://127.0.0.1:37979/mcp[39m
+[90m2026-04-28T16:26:08.423+03:00[39m [36m[heartbeat][39m [36mstarted[39m
+[90m2026-04-28T16:26:08.427+03:00[39m [32m[health-monitor][39m [36mstarted (interval: 300s, startup-grace: 60s, channel-connect-grace: 120s)[39m
+[90m2026-04-28T16:26:08.509+03:00[39m [36m[gateway][39m [36magent model: github-copilot/gpt-5-mini[39m
+[90m2026-04-28T16:26:08.510+03:00[39m [36m[gateway][39m [36mready (5 plugins: acpx, browser, device-pair, phone-control, talk-voice; 4.8s)[39m
+[90m2026-04-28T16:26:08.511+03:00[39m [36m[gateway][39m [36mlog file: /tmp/openclaw/openclaw-2026-04-28.log[39m
+[90m2026-04-28T16:26:08.555+03:00[39m [36m[gateway][39m [33msecurity warning: dangerous config flags enabled: gateway.controlUi.allowInsecureAuth=true, gateway.controlUi.dangerouslyDisableDeviceAuth=true. Run `openclaw security audit`.[39m
+[90m2026-04-28T16:26:08.556+03:00[39m [36m[gateway][39m [36mstarting channels and sidecars...[39m
+[90m2026-04-28T16:26:08.639+03:00[39m [33m[hooks][39m [36mloaded 4 internal hook handlers[39m
+[90m2026-04-28T16:26:23.322+03:00[39m [31m[bonjour][39m [33mwatchdog detected non-announced service; attempting re-advertise (gateway fqdn=cyberkitty-manjaro-i3wm (OpenClaw)._openclaw-gw._tcp.local. host=openclaw.local. port=18789 state=probing)[39m
+[90m2026-04-28T16:26:23.339+03:00[39m [36m[ws][39m [36mwebchat connected conn=bf81196f-76da-48fe-b4a2-ae2c731815f4 remote=127.0.0.1 client=openclaw-control-ui webchat vlain-prototype[39m
+[90m2026-04-28T16:26:23.365+03:00[39m [36m[ws][39m [36m⇄ res ✗ chat.history 0ms errorCode=UNAVAILABLE errorMessage=chat.history unavailable during gateway startup conn=bf81196f…15f4 id=9af10c34…9453[39m
+[90m2026-04-28T16:26:31.309+03:00[39m [36m[ws][39m [36m⇄ res ✓ models.list 7966ms conn=bf81196f…15f4 id=489bc123…3a19[39m
+[90m2026-04-28T16:26:31.313+03:00[39m [35m[plugins][39m [36membedded acpx runtime backend registered (cwd: /home/cyberkitty/.openclaw/workspace)[39m
+[90m2026-04-28T16:26:31.331+03:00[39m [35m[browser][39m [36mcontrol listening on http://127.0.0.1:18791/ (auth=token)[39m
+[90m2026-04-28T16:26:33.809+03:00[39m [35m[plugins][39m [36membedded acpx runtime backend ready[39m
+[90m2026-04-28T16:35:57.536+03:00[39m [36m[ws][39m [36mwebchat disconnected code=1006 reason=n/a conn=bf81196f-76da-48fe-b4a2-ae2c731815f4[39m
+[90m2026-04-28T16:35:58.527+03:00[39m [36m[ws][39m [36mwebchat connected conn=ec3c3ee0-b512-4a67-a847-f3088ed12250 remote=127.0.0.1 client=openclaw-control-ui webchat vlain-prototype[39m
+[90m2026-04-28T16:36:07.660+03:00[39m [34m[reload][39m [36mconfig change detected; evaluating reload (meta.lastTouchedAt, agents.list)[39m
+[90m2026-04-28T16:36:07.675+03:00[39m [34m[reload][39m [36mconfig hot reload applied (agents.list)[39m
+[90m2026-04-28T16:36:16.698+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:36:24.932+03:00[39m [31m[diagnostic][39m [31mlane task error: lane=main durationMs=8203 error="Error: No API key found for provider "openai". You are authenticated with OpenAI Codex OAuth. Use openai-codex/gpt-5.4 (OAuth) or set OPENAI_API_KEY to use openai/gpt-5.4."[39m
+[90m2026-04-28T16:36:24.933+03:00[39m [31m[diagnostic][39m [31mlane task error: lane=session:agent:real-debug-run-lain:main durationMs=8204 error="Error: No API key found for provider "openai". You are authenticated with OpenAI Codex OAuth. Use openai-codex/gpt-5.4 (OAuth) or set OPENAI_API_KEY to use openai/gpt-5.4."[39m
+[90m2026-04-28T16:36:24.939+03:00[39m [35m[model-fallback][39m [33mmodel fallback decision: decision=candidate_failed requested=openai/gpt-5-mini candidate=openai/gpt-5-mini reason=auth next=github-copilot/gpt-5-mini detail=No API key found for provider "openai". You are authenticated with OpenAI Codex OAuth. Use openai-codex/gpt-5.4 (OAuth) or set OPENAI_API_KEY to use openai/gpt-5.4.[39m
+[90m2026-04-28T16:36:28.499+03:00[39m [31m[agent][39m [33mworkspace bootstrap file AGENTS.md is 42846 chars (limit 20000); truncating in injected context (sessionKey=agent:real-debug-run-lain:main)[39m
+[90m2026-04-28T16:36:29.054+03:00[39m [34m[tools][39m [33mtools.allow allowlist contains unknown entries (web_search, code_exec, file_store). Some entries are shipped core tools but unavailable in the current runtime/provider/model/config; other entries won't match any tool unless the plugin is enabled.[39m
+[90m2026-04-28T16:36:29.109+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:36:33.269+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:36:36.113+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:36:36.172+03:00[39m [35m[agents][39m [36msynced openai-codex credentials from external cli[39m
+[90m2026-04-28T16:36:36.175+03:00[39m [35m[model-fallback][39m [33mmodel fallback decision: decision=candidate_succeeded requested=openai/gpt-5-mini candidate=github-copilot/gpt-5-mini reason=unknown next=none[39m
+2026-04-28T16:36:36.188+03:00 Ты хочешь, чтобы я продолжила прерванную работу. Что именно возобновить?
+
+Варианты:
+- Продолжить последний пайплайн (если у тебя есть JSON — пришли его, или скажи «повтори последний»).
+- Запустить новый пайплайн для задачи (опиши задачу кратко — код, ревью, документация и т. п.).
+- Просто показать статус недавних операций или ошибок (покажу логи/ошибки, если есть).
+
+Коротко скажи, что делать.
+[90m2026-04-28T16:38:27.034+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:38:27.036+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:38:31.961+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:38:31.963+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:38:38.335+03:00[39m [36m[ws][39m [36mwebchat disconnected code=1001 reason=n/a conn=ec3c3ee0-b512-4a67-a847-f3088ed12250[39m
+[90m2026-04-28T16:38:38.598+03:00[39m [36m[ws][39m [36mwebchat connected conn=5633032b-f11e-43d4-b2ef-c9c18307152a remote=127.0.0.1 client=openclaw-control-ui webchat vlain-prototype[39m
+[90m2026-04-28T16:38:38.638+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:38:38.641+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:38:41.447+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:38:41.449+03:00[39m [33m[model-selection][39m [33mModel "gpt-5-mini" specified without provider. Falling back to "openai/gpt-5-mini". Please use "openai/gpt-5-mini" in your config.[39m
+[90m2026-04-28T16:38:48.678+03:00[39m [31m[agent][39m [33mworkspace bootstrap file AGENTS.md is 42846 chars (limit 20000); truncating in injected context (sessionKey=agent:lain-head:dashboard:00cc126a-e4e2-40e4-b928-d37c0b7145e4)[39m
+2026-04-28T16:38:50.353+03:00 LOG_BOMB_RAW_ERROR: 400 {"message":"","code":"invalid_request_body"}
+[90m2026-04-28T16:38:50.358+03:00[39m [31m[agent][39m [33membedded run agent end: runId=311a5f2a-3185-40c6-a38a-40e4444386dc isError=true model=gpt-5-mini provider=github-copilot error=LLM request failed: provider rejected the request schema or tool payload. rawError=400 {"message":"","code":"invalid_request_body"}[39m
+2026-04-28T16:38:50.360+03:00 LOG_BOMB_RAW_ERROR: 400 {"message":"","code":"invalid_request_body"}
+[90m2026-04-28T16:38:50.405+03:00[39m [31m[agent][39m [33mauth profile failure state updated: runId=311a5f2a-3185-40c6-a38a-40e4444386dc profile=sha256:bbb6682dd900 provider=github-copilot reason=format window=cooldown reused=false[39m
+[90m2026-04-28T16:38:50.406+03:00[39m [31m[agent][39m [33membedded run failover decision: runId=311a5f2a-3185-40c6-a38a-40e4444386dc stage=assistant decision=surface_error reason=format provider=github-copilot/gpt-5-mini profile=sha256:bbb6682dd900[39m
+2026-04-28T16:38:50.406+03:00 LOG_BOMB_RAW_ERROR: 400 {"message":"","code":"invalid_request_body"}
