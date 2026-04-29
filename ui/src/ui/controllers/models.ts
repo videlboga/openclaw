@@ -11,7 +11,10 @@ import type { ModelCatalogEntry } from "../types.ts";
 export async function loadModels(client: GatewayBrowserClient): Promise<ModelCatalogEntry[]> {
   try {
     const result = await client.request<{ models: ModelCatalogEntry[] }>("models.list", {});
-    return result?.models ?? [];
+    // Best-effort: hide Copilot providers from the UI model list so users
+    // don't see GitHub Copilot / copilot-proxy choices in the picker.
+    const models = result?.models ?? [];
+    return models.filter((m) => m.provider !== "github-copilot" && m.provider !== "copilot-proxy");
   } catch {
     return [];
   }
