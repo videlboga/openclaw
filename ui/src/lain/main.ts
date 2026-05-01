@@ -75,6 +75,7 @@ type SessionState = {
 
 const liveSessions = new Map<string, SessionState>();
 const settings = loadSettings();
+console.log("OPENCLAW LOADED SETTINGS:", settings, "SESSION STORAGE:", window.sessionStorage.getItem("openclaw.control.token.v1:ws://127.0.0.1:18789"), "WINDOW:", window.__openclaw);
 const settingsHost = {
   settings,
   sessionKey: settings.sessionKey,
@@ -355,6 +356,10 @@ async function loadSessionsList() {
     if (!liveSessions.has(state.currentContextId)) {
       state.currentContextId = res.sessions?.[0]?.key ?? "main";
     }
+    const s = liveSessions.get(state.currentContextId);
+    if (s && s.row && s.row.model) {
+      state.selectedModel = s.row.modelProvider ? `${s.row.modelProvider}/${s.row.model}` : s.row.model;
+    }
     state.pipeline = `Live · ${res.count} sessions attached`;
     state.status = state.connected ? "Tracking active contexts" : state.status;
   } catch (error) {
@@ -404,6 +409,9 @@ async function setCurrentContext(contextId: string) {
   const session = liveSessions.get(contextId);
   if (session) {
     session.unread = false;
+    if (session.row && session.row.model) {
+      state.selectedModel = session.row.modelProvider ? `${session.row.modelProvider}/${session.row.model}` : session.row.model;
+    }
   }
   rerender();
   await loadChatHistory(contextId);
@@ -713,8 +721,8 @@ function connect(attemptIndex = 0) {
     }
   }
 
-  // Try to get proxy token (best-effort, non-blocking beyond timeout)
-  void (async () => {
+  // Try to get proxy token and WAIT for it so we don't connect without auth
+  async function initializeConnection() {
     const tok = await waitForProxyToken(600);
     if (tok) {
       settings.token = tok;
@@ -726,22 +734,21 @@ function connect(attemptIndex = 0) {
         state.gatewayCandidates = deriveGatewayCandidates(settings.gatewayUrl);
       } catch {}
     }
-  })();
 
-  state.client?.stop();
-  const url =
-    state.gatewayCandidates[attemptIndex] ?? state.gatewayCandidates[0] ?? settings.gatewayUrl;
-  state.gatewayCandidateIndex = attemptIndex;
-  state.gatewayUrl = url;
-  state.status = `Connecting to gateway (${attemptIndex + 1}/${state.gatewayCandidates.length})`;
-  rerender();
-  const client = new GatewayBrowserClient({
-    url,
-    token: settings.token || undefined,
-    clientName: "openclaw-control-ui",
-    clientVersion: "lain-prototype",
-    mode: "webchat",
-    onHello: (hello) => {
+    state.client?.stop();
+    const url =
+      state.gatewayCandidates[attemptIndex] ?? state.gatewayCandidates[0] ?? settings.gatewayUrl;
+    state.gatewayCandidateIndex = attemptIndex;
+    state.gatewayUrl = url;
+    state.status = `Connecting to gateway (${attemptIndex + 1}/${state.gatewayCandidates.length})`;
+    rerender();
+    const client = new GatewayBrowserClient({
+      url,
+      token: settings.token || undefined,
+      clientName: "openclaw-control-ui",
+      clientVersion: "lain-prototype",
+      mode: "webchat",
+      onHello: (hello) => {
       state.connected = true;
       state.hello = hello;
       state.status = "Connected to gateway";
@@ -755,18 +762,23 @@ function connect(attemptIndex = 0) {
 
       void loadModels(client).then((models) => {
         state.models = models;
+        // Expose the same catalog to chat components so the model picker
+        // (which reads `chatModelCatalog`) has the populated options.
+        // Some chat UI paths load the catalog separately; ensure the
+        // global state is kept in sync for the control UI surface.
+        (state as any).chatModelCatalog = models;
         if (!state.selectedModel && models.length > 0) {
           // Prefer DeepSeek/OpenRouter when available so the UI defaults to
           // the user's configured provider/model instead of an arbitrary
           // first catalog entry.
           const preferred = models.find(
-            (m) => m.id === "deepseek/deepseek-v4-pro" || m.id === "openrouter/deepseek/deepseek-v4-pro"
+            (m) => m.id === "deepseek/deepseek-chat" || m.id === "openrouter/deepseek/deepseek-chat"
           );
           if (preferred) {
-            state.selectedModel = preferred.id;
+            state.selectedModel = preferred.provider ? `${preferred.provider}/${preferred.id}` : preferred.id;
           } else {
             const byProvider = models.find((m) => (m.provider ?? "").toLowerCase() === "openrouter");
-            state.selectedModel = byProvider?.id ?? models[0].id;
+            state.selectedModel = byProvider ? `${byProvider.provider}/${byProvider.id}` : models[0].id;
           }
         }
         rerender();
@@ -797,6 +809,9 @@ function connect(attemptIndex = 0) {
   });
   state.client = client;
   client.start();
+  }
+
+  void initializeConnection();
 }
 
 function messageKey(message: unknown, index: number): string {
@@ -1036,11 +1051,27 @@ function app() {
               style="appearance: none; padding: 8px 28px 8px 14px; outline: none; font-size: inherit; background-image: url('data:image/svg+xml;utf8,<svg xmlns=\x22http://www.w3.org/2000/svg\x22 width=\x2212\x22 height=\x2212\x22 viewBox=\x220 0 24 24\x22 fill=\x22none\x22 stroke=\x22%23cdd6f4\x22 stroke-width=\x222\x22 stroke-linecap=\x22round\x22 stroke-linejoin=\x22round\x22><polyline points=\x226 9 12 15 18 9\x22/></svg>'); background-repeat: no-repeat; background-position: right 10px center;"
               .value=${state.selectedModel ?? ""}
               @change=${(e: Event) => {
-                state.selectedModel = (e.target as HTMLSelectElement).value;
+                const newModel = (e.target as HTMLSelectElement).value;
+                state.selectedModel = newModel;
+                const active = state.currentContextId ? liveSessions.get(state.currentContextId) : undefined;
+                if (active && state.currentContextId && state.client) {
+                  void state.client.request("sessions.patch", {
+                    key: state.currentContextId,
+                    model: newModel,
+                  }).catch(() => {});
+                  const [provider, ...rest] = newModel.split("/");
+                  const modelId = rest.join("/");
+                  if (modelId) {
+                    active.row.modelProvider = provider;
+                    active.row.model = modelId;
+                  } else {
+                    active.row.model = newModel;
+                  }
+                }
                 rerender();
               }}
             >
-              ${state.models.map((m) => html`<option style="background-color: var(--bg-main); color: var(--text-main);" value=${m.id}>${m.name} (${m.provider})</option>`)}
+              ${state.models.map((m) => html`<option style="background-color: var(--bg-main); color: var(--text-main);" value="${m.provider}/${m.id}" ?selected=${`${m.provider}/${m.id}` === state.selectedModel}>${m.name} (${m.provider})</option>`)}
             </select>
             <span class="pill">${current?.pipeline ?? state.pipeline}</span>
             <div

@@ -402,6 +402,8 @@ export async function applySessionsPatchToStore(params: {
         defaultProvider: resolvedDefault.provider,
         defaultModel: subagentModelHint ?? resolvedDefault.model,
       });
+      // DEBUG
+      console.log("RESOLVING MODEL REF IN PATCH:", { trimmed, resolved });
       if ("error" in resolved) {
         return invalid(resolved.error);
       }
