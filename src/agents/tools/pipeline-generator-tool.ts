@@ -30,6 +30,7 @@ export function createPipelineGeneratorTool(): AnyAgentTool {
         pipeline: args.agents,
         pipelineId: args.pipelineId,
         workspaceDir: args.workspaceDir,
+        initialMessage: "Выполни задачу как описано",
       };
 
       const markdownBlock = `~~~json\n${JSON.stringify({ pipeline: pipelineData }, null, 2)}\n~~~`;
